@@ -84,8 +84,9 @@ function dsmAdvisoryStatus(build, advisory) {
 
 function checkAdvisories(config, _tlsProfile, parseResult) {
     const fw    = [fwRef('CIS', '7.3'), fwRef('NIST', 'SI-2'), fwRef('ISO', 'A.8.8'), fwRef('PCI', 'Req.6.3.3')];
-    const build = parseInt(parseResult?.info?.dsm_buildnumber, 10);
-    if (!Number.isInteger(build) || build <= 0) {
+    const raw   = String(parseResult?.info?.dsm_buildnumber ?? '').trim();
+    const build = /^\d+$/.test(raw) ? parseInt(raw, 10) : NaN;
+    if (!Number.isSafeInteger(build) || build <= 0) {
         return [unknownFinding('syn-advisories-unknown', t('checkNameAdvisories'), t('catMaintenance'), fw)];
     }
 
@@ -101,8 +102,9 @@ function checkAdvisories(config, _tlsProfile, parseResult) {
         (status === 'vulnerable' ? vulnerable : unknown).push(item);
     }
 
+    const findings = [];
     if (vulnerable.length) {
-        return [{
+        findings.push({
             id:          'syn-advisories-vulnerable',
             title:       t('checkAdvisoriesFailTitle', build),
             description: t('checkAdvisoriesDesc'),
@@ -112,17 +114,18 @@ function checkAdvisories(config, _tlsProfile, parseResult) {
             frameworks:  fw,
             affectedItems: vulnerable,
             remediation: t('checkAdvisoriesRemediation'),
-        }];
+        });
     }
     if (unknown.length) {
-        return [{
+        findings.push({
             ...unknownFinding('syn-advisories-unknown', t('checkNameAdvisories'), t('catMaintenance'), fw),
             title:         t('checkAdvisoriesUnknownTitle', build),
             description:   t('checkAdvisoriesUnknownDesc'),
             affectedItems: unknown,
             remediation:   t('checkAdvisoriesRemediation'),
-        }];
+        });
     }
+    if (findings.length) return findings;
     return [{
         id:          'syn-advisories-ok',
         title:       t('checkAdvisoriesPassTitle', build),

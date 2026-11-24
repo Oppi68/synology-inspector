@@ -45,49 +45,52 @@
         <div class="header-left">
             <img class="header-logo" src="img/logo-jklp.png" alt="JKLP Consulting">
             <div class="header-product">
-                <span class="header-title">
+                <h1 class="header-title">
                     Synology Inspector<span class="header-version">v1.1</span>
-                </span>
+                </h1>
                 <span class="header-subtitle">JKLP CONSULTING · SECURITY AUDIT</span>
             </div>
         </div>
         <div class="header-right">
-            <button class="about-btn" onclick="showAbout()">
+            <button type="button" class="about-btn" onclick="showAbout()">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                     <circle cx="8" cy="8" r="7.25" stroke="currentColor" stroke-width="1.5"/>
                     <rect x="7.25" y="6.5" width="1.5" height="5" rx=".75" fill="currentColor"/>
                     <rect x="7.25" y="4" width="1.5" height="1.5" rx=".75" fill="currentColor"/>
                 </svg>
-                About
+                <span id="about-btn-label">About</span>
             </button>
-            <div class="lang-toggle">
-                <button class="lang-btn lang-btn--active" data-lang="en"
-                        onclick="setLanguage('en')">EN</button>
-                <button class="lang-btn" data-lang="de"
-                        onclick="setLanguage('de')">DE</button>
+            <div class="lang-toggle" role="group" aria-label="Language">
+                <button type="button" class="lang-btn lang-btn--active" data-lang="en" lang="en"
+                        aria-pressed="true" onclick="setLanguage('en')">EN</button>
+                <button type="button" class="lang-btn" data-lang="de" lang="de"
+                        aria-pressed="false" onclick="setLanguage('de')">DE</button>
             </div>
         </div>
     </header>
 
     <!-- ── About modal ──────────────────────────────────────────────────────── -->
-    <div id="about-modal" class="about-modal-overlay about-modal-overlay--hidden"
-         onclick="if(event.target===this) closeAbout()">
-        <div class="about-modal-panel" role="dialog" aria-modal="true">
-            <button class="about-modal-close" onclick="closeAbout()" aria-label="Close">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <dialog id="about-modal" class="about-modal" aria-labelledby="about-title"
+            onclick="if(event.target===this) closeAbout()">
+        <div class="about-modal-panel">
+            <button type="button" class="about-modal-close" onclick="closeAbout()" aria-label="Close">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                     <line x1="3" y1="3" x2="13" y2="13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
                     <line x1="13" y1="3" x2="3" y2="13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
                 </svg>
             </button>
             <div id="about-modal-content"></div>
         </div>
-    </div>
+    </dialog>
 
     <!-- ── Context Bar — file info (shown when a backup is loaded) ───────── -->
-    <div id="context-bar" class="context-bar context-bar--hidden"></div>
+    <section id="context-bar" class="context-bar context-bar--hidden" aria-label="Backup details"></section>
 
     <!-- ── App root ──────────────────────────────────────────────────────── -->
-    <div id="app"></div>
+    <main id="app"></main>
+
+    <!-- ── Screen reader announcements (loading, results, filters) ──────── -->
+    <div id="app-status" class="visually-hidden" role="status" aria-live="polite"></div>
 
     <!-- ── i18n — must be first ──────────────────────────────────────────── -->
     <script src="js/i18n.js"></script>

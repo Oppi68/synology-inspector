@@ -13,15 +13,19 @@
 
 function checkBestPractices(config, _tlsProfile, parseResult) {
     const findings       = [];
-    const schedulerTasks = parseResult?.schedulerTasks || [];
+    const schedulerTasks = parseResult?.schedulerTasks ?? null;
     const hasBtrfs       = parseResult?.hasBtrfs       ?? false;
 
     // ── Network: default ports ─────────────────────────────────────────────────
     // A changed port does not stop targeted attacks, but cuts noise from scanners.
+    const sshFlag      = config.get('Terminal_isEnableSSH');
     const defaultPorts = [];
     if (config.get('w3_admin_port') === '5000')        defaultPorts.push('DSM HTTP 5000');
     if (config.get('w3_secure_admin_port') === '5001') defaultPorts.push('DSM HTTPS 5001');
-    if (config.get('Terminal_isEnableSSH') === '1' && config.get('Terminal_SSHPort') === '22') defaultPorts.push('SSH 22');
+    if (sshFlag === '1' && config.get('Terminal_SSHPort') === '22') defaultPorts.push('SSH 22');
+    // A pass needs every port in question: both DSM ports, plus the SSH port if SSH is on
+    const allPortsRead = config.has('w3_admin_port') && config.has('w3_secure_admin_port')
+        && (sshFlag === '0' || (sshFlag === '1' && config.has('Terminal_SSHPort')));
     if (defaultPorts.length) {
         findings.push({
             id:          'bp-default-ports',
@@ -34,7 +38,7 @@ function checkBestPractices(config, _tlsProfile, parseResult) {
             affectedItems: defaultPorts,
             remediation: t('bpCheckPortsRemediation'),
         });
-    } else if (config.has('w3_admin_port') && config.has('w3_secure_admin_port')) {
+    } else if (allPortsRead) {
         findings.push({
             id:          'bp-custom-ports',
             title:       t('bpCheckPortsPassTitle'),
@@ -49,8 +53,11 @@ function checkBestPractices(config, _tlsProfile, parseResult) {
     }
 
     // ── SMB: Transfer Log ─────────────────────────────────────────────────────
-    // Transfer log should be OFF (0) for performance; ON (1) = FAIL
-    if (config.get('CIFS_Enable_Transfer_Log') === '1') {
+    // Transfer log should be OFF (0) for performance; ON (1) = FAIL.
+    // Other or missing values produce no finding (also for the SMB, AFP and
+    // Fast Clone checks below).
+    const transferLog = config.get('CIFS_Enable_Transfer_Log');
+    if (transferLog === '1') {
         findings.push({
             id:          'bp-smb-transfer-log-on',
             title:       t('bpCheckTransferLogFailTitle'),
@@ -62,7 +69,7 @@ function checkBestPractices(config, _tlsProfile, parseResult) {
             affectedItems: ['CIFS_Enable_Transfer_Log'],
             remediation: t('bpCheckTransferLogRemediation'),
         });
-    } else {
+    } else if (transferLog === '0') {
         findings.push({
             id:          'bp-smb-transfer-log-off',
             title:       t('bpCheckTransferLogPassTitle'),
@@ -78,7 +85,7 @@ function checkBestPractices(config, _tlsProfile, parseResult) {
 
     // ── SMB: Strict Allocate ──────────────────────────────────────────────────
     // Should be ON (1) = "do not reserve disk space" = better performance
-    if (config.get('CIFS_Strict_Allocate') !== '1') {
+    if (config.get('CIFS_Strict_Allocate') === '0') {
         findings.push({
             id:          'bp-smb-no-strict-allocate',
             title:       t('bpCheckStrictAllocateFailTitle'),
@@ -90,7 +97,7 @@ function checkBestPractices(config, _tlsProfile, parseResult) {
             affectedItems: [],
             remediation: t('bpCheckStrictAllocateRemediation'),
         });
-    } else {
+    } else if (config.get('CIFS_Strict_Allocate') === '1') {
         findings.push({
             id:          'bp-smb-strict-allocate-ok',
             title:       t('bpCheckStrictAllocatePassTitle'),
@@ -105,7 +112,7 @@ function checkBestPractices(config, _tlsProfile, parseResult) {
     }
 
     // ── SMB: Asynchronous Read ────────────────────────────────────────────────
-    if (config.get('CIFS_Enable_AIO_Read') !== '1') {
+    if (config.get('CIFS_Enable_AIO_Read') === '0') {
         findings.push({
             id:          'bp-smb-no-aio',
             title:       t('bpCheckAIOReadFailTitle'),
@@ -117,7 +124,7 @@ function checkBestPractices(config, _tlsProfile, parseResult) {
             affectedItems: [],
             remediation: t('bpCheckAIOReadRemediation'),
         });
-    } else {
+    } else if (config.get('CIFS_Enable_AIO_Read') === '1') {
         findings.push({
             id:          'bp-smb-aio-ok',
             title:       t('bpCheckAIOReadPassTitle'),
@@ -132,7 +139,7 @@ function checkBestPractices(config, _tlsProfile, parseResult) {
     }
 
     // ── SMB: Multichannel ─────────────────────────────────────────────────────
-    if (config.get('CIFS_Enable_Multichannel') !== '1') {
+    if (config.get('CIFS_Enable_Multichannel') === '0') {
         findings.push({
             id:          'bp-smb-no-multichannel',
             title:       t('bpCheckMultichannelFailTitle'),
@@ -144,7 +151,7 @@ function checkBestPractices(config, _tlsProfile, parseResult) {
             affectedItems: [],
             remediation: t('bpCheckMultichannelRemediation'),
         });
-    } else {
+    } else if (config.get('CIFS_Enable_Multichannel') === '1') {
         findings.push({
             id:          'bp-smb-multichannel-ok',
             title:       t('bpCheckMultichannelPassTitle'),
@@ -160,7 +167,7 @@ function checkBestPractices(config, _tlsProfile, parseResult) {
 
     // ── SMB: Cross-share symlinks ─────────────────────────────────────────────
     // CIFS_Widelinks: '1' = symlinks may cross share boundaries (path traversal risk)
-    //                 '0' or absent = constrained within share (safe)
+    //                 '0' = constrained within share (safe)
     // CIFS_Symlinks controls symlinks *within* a share (normal, not a risk).
     if (config.get('CIFS_Widelinks') === '1') {
         findings.push({
@@ -174,7 +181,7 @@ function checkBestPractices(config, _tlsProfile, parseResult) {
             affectedItems: [],
             remediation: t('bpCheckSymlinksRemediation'),
         });
-    } else {
+    } else if (config.get('CIFS_Widelinks') === '0') {
         findings.push({
             id:          'bp-smb-cross-share-symlinks-ok',
             title:       t('bpCheckSymlinksPassTitle'),
@@ -201,7 +208,7 @@ function checkBestPractices(config, _tlsProfile, parseResult) {
             affectedItems: ['AFP'],
             remediation: t('bpCheckAFPRemediation'),
         });
-    } else {
+    } else if (config.get('AFP_isEnableAFP') === '0') {
         findings.push({
             id:          'bp-afp-disabled',
             title:       t('bpCheckAFPPassTitle'),
@@ -217,7 +224,7 @@ function checkBestPractices(config, _tlsProfile, parseResult) {
 
     // ── Fast Clone — only relevant when btrfs is in use ───────────────────────
     if (hasBtrfs) {
-        if (config.get('ADV_isEnableReflinkCopy') !== '1') {
+        if (config.get('ADV_isEnableReflinkCopy') === '0') {
             findings.push({
                 id:          'bp-no-fast-clone',
                 title:       t('bpCheckFastCloneFailTitle'),
@@ -229,7 +236,7 @@ function checkBestPractices(config, _tlsProfile, parseResult) {
                 affectedItems: [],
                 remediation: t('bpCheckFastCloneRemediation'),
             });
-        } else {
+        } else if (config.get('ADV_isEnableReflinkCopy') === '1') {
             findings.push({
                 id:          'bp-fast-clone-ok',
                 title:       t('bpCheckFastClonePassTitle'),
@@ -271,11 +278,12 @@ function checkBestPractices(config, _tlsProfile, parseResult) {
     }
 
     // ── Recycle Bin cleanup task ──────────────────────────────────────────────
-    const hasRecycleTask = schedulerTasks.some(
+    // An empty or partly unreadable task list cannot show that the task is missing
+    const hasRecycleTask = schedulerTasks?.some(
         task => task.app === 'SYNO.SDS.TaskScheduler.Recycle' && task.state === 'enabled'
     );
 
-    if (!hasRecycleTask) {
+    if (schedulerTasks?.length && !hasRecycleTask) {
         findings.push({
             id:          'bp-no-recycle-task',
             title:       t('bpCheckRecycleTaskFailTitle'),
@@ -287,7 +295,7 @@ function checkBestPractices(config, _tlsProfile, parseResult) {
             affectedItems: [],
             remediation: t('bpCheckRecycleTaskRemediation'),
         });
-    } else {
+    } else if (hasRecycleTask) {
         findings.push({
             id:          'bp-recycle-task-ok',
             title:       t('bpCheckRecycleTaskPassTitle'),

@@ -21,7 +21,7 @@ function checkUsers(config, _tlsProfile, parseResult) {
 
     if (adminActive === null) {
         findings.push(unknownFinding('syn-admin-unknown', t('checkNameAdmin'), t('catUsers'),
-            [fwRef('CIS', '4.7'), fwRef('NIST', 'AC-2')]));
+            [fwRef('CIS', '4.7'), fwRef('NIST', 'AC-2'), fwRef('ISO', 'A.8.3')]));
     } else if (adminActive) {
         findings.push({
             id:          'syn-admin-active',
@@ -49,9 +49,13 @@ function checkUsers(config, _tlsProfile, parseResult) {
     }
 
     // ── Password policy ───────────────────────────────────────────────────────
-    const policyEnabled = config.get('Passwdstrength_isApplyPasswdRule') === '1';
+    // '1' = strength rules applied, '0' = not applied; anything else cannot be evaluated
+    const policyValue = config.get('Passwdstrength_isApplyPasswdRule');
 
-    if (!policyEnabled) {
+    if (policyValue !== '0' && policyValue !== '1') {
+        findings.push(unknownFinding('syn-pwd-policy-unknown', t('checkNamePwdPolicy'), t('catUsers'),
+            [fwRef('CIS', '5.2'), fwRef('NIST', 'IA-5'), fwRef('ISO', 'A.5.17'), fwRef('PCI', 'Req.8.3.6')]));
+    } else if (policyValue === '0') {
         findings.push({
             id:          'syn-pwd-policy-disabled',
             title:       t('checkPwdPolicyDisabledFailTitle'),
@@ -66,9 +70,13 @@ function checkUsers(config, _tlsProfile, parseResult) {
     } else {
         // Min length
         const minLengthEnabled = config.get('Passwdstrength_isEnableMinLength') === '1';
-        const minLength        = minLengthEnabled ? parseInt(config.get('Passwdstrength_minLength') || '0', 10) : 0;
+        const minLengthRaw     = config.get('Passwdstrength_minLength') ?? '';
+        const minLength        = minLengthEnabled ? parseInt(minLengthRaw, 10) : 0;
 
-        if (!minLengthEnabled || minLength < 12) {
+        if (minLengthEnabled && !/^\d{1,3}$/.test(minLengthRaw)) {
+            findings.push(unknownFinding('syn-pwd-length-unknown', t('checkNamePwdLength'), t('catUsers'),
+                [fwRef('CIS', '5.2'), fwRef('ISO', 'A.5.17'), fwRef('PCI', 'Req.8.3.6')]));
+        } else if (!minLengthEnabled || minLength < 12) {
             findings.push({
                 id:          'syn-pwd-length-weak',
                 title:       t('checkPwdLengthFailTitle'),
