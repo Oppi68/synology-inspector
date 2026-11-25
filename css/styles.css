@@ -16,13 +16,19 @@
     --color-focus:       var(--sapHighlightColor,             #0064d9);
     --color-text-1:      var(--sapTextColor,                  #131e29);
     --color-text-2:      var(--sapContent_LabelColor,         #556b82);
-    --color-text-3:      var(--sapContent_NonInteractiveIconColor, #758ca4);
+    /* LabelColor instead of NonInteractiveIconColor (#758ca4, 3.5:1) — text needs 4.5:1 */
+    --color-text-3:      var(--sapContent_LabelColor,         #556b82);
     --color-brand:       var(--sapHighlightColor,             #0064d9);
     --color-brand-hover: var(--sapButton_Active_BorderColor,  #0053c0);
     --color-success:     var(--sapPositiveColor,              #256f3a);
     --color-error:       var(--sapNegativeColor,              #aa0808);
     --color-warn:        var(--sapCriticalColor,              #e76500);
     --font-sans: var(--sapFontFamily, "72", "72full", Arial, Helvetica, sans-serif);
+    /* Type scale one step above Horizon's 14px default; nothing renders below 14px */
+    --sapFontSize:        1rem;
+    --sapFontSmallSize:   .875rem;
+    --sapFontLargeSize:   1.125rem;
+    --sapFontHeader6Size: 1rem;
     --font-mono: 'Consolas', 'SFMono-Regular', 'Menlo', 'Monaco', 'Courier New', monospace;
     --r-xs: 2px; --r-sm: 4px; --r-md: 8px; --r-lg: 12px; --r-pill: 999px;
     --shadow-level1: 0 1px 4px rgba(0,0,0,.08);
@@ -41,14 +47,23 @@
 html, body { height: 100%; }
 body {
     display: flex; flex-direction: column;
-    font-family: var(--font-sans); font-size: 14px; line-height: 1.5;
+    font-family: var(--font-sans); font-size: 1rem; line-height: 1.5;
     background: var(--color-bg-page); color: var(--color-text-1);
     -webkit-font-smoothing: antialiased; overflow: hidden;
+}
+/* Headings carry structure only; each heading class sets its own size */
+h1, h2, h3 { font-size: inherit; font-weight: inherit; }
+
+/* Hidden visually, still read by screen readers */
+.visually-hidden {
+    position: absolute !important; width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
 }
 
 /* ── Shell Bar ──────────────────────────────────────────────────────────── */
 .header {
-    display: flex; align-items: stretch; height: var(--header-h);
+    display: flex; align-items: stretch; min-height: var(--header-h);
     background: var(--color-shell-bg); border-bottom: 3px solid var(--color-shell-border);
     box-shadow: 0 2px 8px rgba(0,0,0,.3); flex-shrink: 0; z-index: 20;
     position: relative;
@@ -61,10 +76,10 @@ body {
     filter: brightness(0) invert(1); }
 .header-product { display: flex; align-items: baseline; gap: 0; }
 .header-title {
-    font-size: 14px; font-weight: 600; color: var(--color-shell-text); white-space: nowrap;
+    font-size: 1rem; font-weight: 600; color: var(--color-shell-text); white-space: nowrap;
 }
 .header-version {
-    font-size: 10px; font-family: var(--font-mono);
+    font-size: .875rem; font-family: var(--font-mono);
     color: var(--color-shell-bg); background: var(--color-shell-border);
     border-radius: var(--r-sm); padding: 1px 5px; margin-left: 7px;
     font-weight: 800; vertical-align: middle;
@@ -77,7 +92,7 @@ body {
     display: flex; align-items: center; gap: 6px;
     padding: 0 14px; border: none; background: transparent;
     color: var(--color-shell-text-2); cursor: pointer;
-    font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+    font-family: var(--font-mono); font-size: .875rem; font-weight: 600;
     border-right: 1px solid rgba(255,255,255,.1);
     transition: color .12s, background .12s;
     white-space: nowrap;
@@ -91,17 +106,19 @@ body {
 .lang-btn {
     background: transparent; border: 1px solid transparent;
     border-radius: var(--r-sm); color: var(--color-shell-text-2);
-    cursor: pointer; font-family: var(--font-mono); font-size: 11px; font-weight: 600;
-    padding: 3px 8px; transition: color .12s, background .12s, border-color .12s;
+    cursor: pointer; font-family: var(--font-mono); font-size: .875rem; font-weight: 600;
+    padding: 3px 8px; min-height: 24px;
+    transition: color .12s, background .12s, border-color .12s;
 }
 .lang-btn:hover   { color: var(--color-shell-text); background: var(--color-shell-tab-hover); }
 .lang-btn--active { color: var(--color-shell-bg); background: var(--color-shell-border); border-color: transparent; }
 
 /* ── Context Bar ────────────────────────────────────────────────────────── */
 .context-bar {
-    display: flex; align-items: center; height: var(--context-bar-h);
+    display: flex; align-items: center; min-height: var(--context-bar-h);
     background: var(--color-bg-panel); border-bottom: 1px solid var(--color-border);
-    padding: 0 20px; font-size: 12px; flex-shrink: 0;
+    padding: 4px 20px; font-size: .875rem; flex-shrink: 0;
+    flex-wrap: wrap; row-gap: 4px;
 }
 .context-bar--hidden { display: none; }
 .context-item {
@@ -110,7 +127,7 @@ body {
 }
 .context-item:first-child { padding-left: 0; }
 .context-label {
-    color: var(--color-text-3); font-size: 11px; text-transform: uppercase;
+    color: var(--color-text-3); font-size: .875rem; text-transform: uppercase;
     letter-spacing: .04em; font-weight: 600; white-space: nowrap;
 }
 .context-value {
@@ -140,13 +157,19 @@ body {
     box-shadow: 0 0 0 3px rgba(0,100,217,.08), var(--shadow-level2);
 }
 .drop-zone-icon { color: var(--color-text-3); margin-bottom: 16px; }
-.drop-zone-title { font-size: 16px; font-weight: 600; color: var(--color-text-1); margin-bottom: 6px; }
-.drop-zone-or { font-size: 13px; color: var(--color-text-3); margin-bottom: 4px; }
-.drop-zone-browse { color: var(--color-brand); text-decoration: underline; cursor: pointer; }
-.drop-zone-formats { font-size: 12px; color: var(--color-text-3); margin-top: 12px; margin-bottom: 20px; }
+.drop-zone-title { font-size: 1.125rem; font-weight: 600; color: var(--color-text-1); margin-bottom: 6px; }
+.drop-zone-or { font-size: .9375rem; color: var(--color-text-3); margin-bottom: 4px; }
+.drop-zone-browse {
+    color: var(--color-brand); text-decoration: underline; cursor: pointer;
+    background: none; border: 0; padding: 0; font: inherit;
+}
+.drop-zone-formats { font-size: .875rem; color: var(--color-text-3); margin-top: 12px; margin-bottom: 12px; }
+.drop-zone-compare { font-size: .9375rem; color: var(--color-text-3); margin-bottom: 20px; }
+/* WCAG 2.5.8: at least 24px high, so a near miss does not hit the drop zone */
+.drop-zone-compare .drop-zone-browse { min-height: 24px; padding: 2px 4px; }
 .drop-zone-privacy {
     display: flex; align-items: center; justify-content: center; gap: 6px;
-    font-size: 11px; color: var(--color-text-3);
+    font-size: .875rem; color: var(--color-text-3);
     background: var(--color-bg-page); border: 1px solid var(--color-border-sub);
     border-radius: var(--r-sm); padding: 8px 12px;
 }
@@ -162,8 +185,8 @@ body {
     border-radius: 50%; animation: spin .8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-.loading-title { font-size: 16px; font-weight: 600; color: var(--color-text-1); }
-.loading-hint { font-size: 13px; color: var(--color-text-3); }
+.loading-title { font-size: 1.125rem; font-weight: 600; color: var(--color-text-1); }
+.loading-hint { font-size: .9375rem; color: var(--color-text-3); }
 
 /* ── Error view ─────────────────────────────────────────────────────────── */
 .error-view {
@@ -171,10 +194,10 @@ body {
     align-items: center; justify-content: center;
     gap: 12px; padding: 32px; text-align: center; background: var(--color-bg-page);
 }
-.error-icon { font-size: 40px; color: var(--color-error); }
-.error-title { font-size: 18px; font-weight: 600; color: var(--color-text-1); }
+.error-icon { font-size: 2.875rem; color: var(--color-error); }
+.error-title { font-size: 1.3125rem; font-weight: 600; color: var(--color-text-1); }
 .error-message {
-    font-size: 12px; color: var(--color-text-2); max-width: 540px;
+    font-size: .875rem; color: var(--color-text-2); max-width: 540px;
     background: #fff4f4; border: 1px solid #f5c6c6;
     border-radius: var(--r-md); padding: 12px 16px;
     font-family: var(--font-mono); text-align: left; word-break: break-word;
@@ -183,8 +206,8 @@ body {
 /* ── Buttons ────────────────────────────────────────────────────────────── */
 .fd-button {
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-    height: 32px; padding: 0 16px; border-radius: var(--r-sm);
-    font-family: var(--font-sans); font-size: 13px; font-weight: 600;
+    min-height: 32px; padding: 0 16px; border-radius: var(--r-sm);
+    font-family: var(--font-sans); font-size: .9375rem; font-weight: 600;
     cursor: pointer; transition: background .15s, border-color .15s, color .15s;
     white-space: nowrap; border: 1px solid transparent; text-decoration: none;
 }
@@ -200,23 +223,23 @@ body {
     display: inline-flex; align-items: center; gap: 6px;
     margin-top: 10px;
     background: transparent; border: none; cursor: pointer;
-    color: var(--color-text-3); font-family: var(--font-sans); font-size: 12px;
+    color: var(--color-text-3); font-family: var(--font-sans); font-size: .875rem;
     padding: 4px 2px; transition: color .12s;
 }
 .about-inline-btn:hover { color: var(--color-brand); }
 
-/* ── About modal ────────────────────────────────────────────────────────── */
-.about-modal-overlay {
-    position: fixed; inset: 0; z-index: 200;
-    background: rgba(0,0,0,.45);
-    display: flex; align-items: center; justify-content: center;
-    padding: 16px;
+/* ── About modal (native <dialog>) ──────────────────────────────────────── */
+/* No padding on the dialog itself: a click on it outside the panel is a backdrop click */
+.about-modal {
+    margin: auto; padding: 0; border: none; background: transparent;
+    width: 480px; max-width: calc(100% - 32px); max-height: calc(100% - 32px);
+    overflow-y: auto; /* content can exceed small or zoomed viewports */
 }
-.about-modal-overlay--hidden { display: none; }
+.about-modal::backdrop { background: rgba(0,0,0,.45); }
 .about-modal-panel {
     background: var(--color-bg-panel); border-radius: var(--r-lg);
     box-shadow: 0 8px 32px rgba(0,0,0,.22), 0 2px 8px rgba(0,0,0,.12);
-    width: 480px; max-width: 100%; padding: 28px 28px 24px;
+    padding: 28px 28px 24px;
     position: relative;
 }
 .about-modal-close {
@@ -230,32 +253,32 @@ body {
 
 /* ── About content (inside modal) ───────────────────────────────────────── */
 .about-header {
-    display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px;
 }
 .about-logo {
     height: 28px; width: auto; flex-shrink: 0;
     /* no filter — shown on white background, unlike header logo */
 }
 .about-tool-name {
-    font-size: 15px; font-weight: 700; color: var(--color-text-1);
+    font-size: 1.0625rem; font-weight: 700; color: var(--color-text-1);
     display: flex; align-items: baseline; gap: 7px;
 }
 .about-tool-version {
-    font-size: 10px; font-family: var(--font-mono); font-weight: 800;
+    font-size: .875rem; font-family: var(--font-mono); font-weight: 800;
     color: var(--color-shell-bg); background: var(--color-shell-border);
     border-radius: var(--r-sm); padding: 1px 5px; vertical-align: middle;
 }
 .about-maker {
-    font-size: 11px; font-weight: 600; letter-spacing: .08em;
+    font-size: .875rem; font-weight: 600; letter-spacing: .08em;
     text-transform: uppercase; color: var(--color-text-3);
 }
 .about-desc {
-    font-size: 13px; color: var(--color-text-2); line-height: 1.6;
+    font-size: .9375rem; color: var(--color-text-2); line-height: 1.6;
     margin-bottom: 10px;
 }
 
 .about-sob-note {
-    font-size: 11.5px; color: var(--color-text-3); line-height: 1.55;
+    font-size: .875rem; color: var(--color-text-3); line-height: 1.55;
     margin-bottom: 16px;
     padding: 7px 10px;
     background: #f3f4f6;
@@ -283,14 +306,47 @@ body {
 .about-web-icon { flex-shrink: 0; color: #2255bb; }
 .about-yt-icon { flex-shrink: 0; }
 .about-yt-text { display: flex; flex-direction: column; gap: 1px; }
-.about-yt-name { font-size: 13px; font-weight: 700; color: var(--color-text-1); }
-.about-yt-sub  { font-size: 11px; color: var(--color-text-3); }
+.about-yt-name { font-size: .9375rem; font-weight: 700; color: var(--color-text-1); }
+.about-yt-sub  { font-size: .875rem; color: var(--color-text-3); }
 .about-yt-arrow { margin-left: auto; color: var(--color-text-3); flex-shrink: 0; }
 .about-badges {
     display: flex; gap: 6px; flex-wrap: wrap;
 }
 .about-badge {
-    font-size: 11px; font-weight: 600; color: var(--color-text-3);
+    font-size: .875rem; font-weight: 600; color: var(--color-text-3);
     background: var(--color-bg-page); border: 1px solid var(--color-border-sub);
     border-radius: var(--r-pill); padding: 3px 10px;
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ── Small viewports / high zoom (WCAG 1.4.10 Reflow) ───────────────────── */
+/* The page scrolls as a whole instead of the fixed app-shell layout */
+@media (max-width: 60em), (max-height: 40em) {
+    html, body { height: auto; }
+    body { overflow: visible; }
+    #app { overflow: visible; }
+    .header { flex-wrap: wrap; }
+    .header-product { flex-wrap: wrap; }
+    .header-title { white-space: normal; }
+    .context-value { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+}
+
+/* Narrow viewports only: short wide windows keep the right-aligned controls */
+@media (max-width: 60em) {
+    .header-left { padding: 8px 12px; border-right: none; flex-wrap: wrap; row-gap: 4px; }
+    .header-right { margin-left: 0; flex-wrap: wrap; }
+    .about-btn { padding: 8px 12px; }
+    .lang-toggle { padding: 8px 12px; }
+    .context-bar { padding: 8px 12px; }
+    .context-item { padding: 0 12px 0 0; border-right: none; min-width: 0; }
+    .context-actions { margin-left: 0; padding-left: 0; display: flex; flex-wrap: wrap; }
 }

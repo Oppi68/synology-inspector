@@ -11,6 +11,7 @@ function checkRemoteAccess(config, _tlsProfile) {
     const findings = [];
 
     // ── QuickConnect ─────────────────────────────────────────────────────────
+    const qcFw    = [fwRef('CIS', '4.8'), fwRef('NIST', 'SC-7'), fwRef('ISO', 'A.8.20'), fwRef('NIS2', 'Art.21(b)')];
     const qcRaw   = config.get('QUICKCONNECT_config');
     let qcEnabled = null;
     if (qcRaw) {
@@ -21,8 +22,7 @@ function checkRemoteAccess(config, _tlsProfile) {
     }
 
     if (qcEnabled === null) {
-        findings.push(unknownFinding('syn-qc-unknown', t('checkNameQC'), t('catRemoteAccess'),
-            [fwRef('CIS', '4.8'), fwRef('NIST', 'SC-7')]));
+        findings.push(unknownFinding('syn-qc-unknown', t('checkNameQC'), t('catRemoteAccess'), qcFw));
     } else {
         if (qcEnabled) {
             findings.push({
@@ -32,7 +32,7 @@ function checkRemoteAccess(config, _tlsProfile) {
                 severity:    'high',
                 status:      'fail',
                 category:    t('catRemoteAccess'),
-                frameworks:  [fwRef('CIS', '4.8'), fwRef('NIST', 'SC-7'), fwRef('ISO', 'A.8.20'), fwRef('NIS2', 'Art.21(b)')],
+                frameworks:  qcFw,
                 affectedItems: ['QuickConnect'],
                 remediation: t('checkQCRemediation'),
             });
@@ -44,7 +44,7 @@ function checkRemoteAccess(config, _tlsProfile) {
                 severity:    'info',
                 status:      'pass',
                 category:    t('catRemoteAccess'),
-                frameworks:  [fwRef('CIS', '4.8'), fwRef('NIST', 'SC-7')],
+                frameworks:  qcFw,
                 affectedItems: [],
                 remediation: '',
             });
@@ -57,7 +57,7 @@ function checkRemoteAccess(config, _tlsProfile) {
 
     if (sshVal !== '0' && sshVal !== '1') {
         findings.push(unknownFinding('syn-ssh-unknown', t('checkNameSSH'), t('catRemoteAccess'),
-            [fwRef('CIS', '4.6'), fwRef('NIST', 'CM-7')]));
+            [fwRef('CIS', '4.6'), fwRef('NIST', 'CM-7'), fwRef('ISO', 'A.8.20')]));
     } else if (sshVal === '1') {
         findings.push({
             id:          'syn-ssh-enabled',
@@ -88,7 +88,7 @@ function checkRemoteAccess(config, _tlsProfile) {
     const telnetVal = config.get('Terminal_isEnableTelnet');
     if (telnetVal !== '0' && telnetVal !== '1') {
         findings.push(unknownFinding('syn-telnet-unknown', t('checkNameTelnet'), t('catRemoteAccess'),
-            [fwRef('CIS', '4.6'), fwRef('NIST', 'SC-8')]));
+            [fwRef('CIS', '4.6'), fwRef('NIST', 'SC-8'), fwRef('ISO', 'A.8.20'), fwRef('PCI', 'Req.2.2.7')]));
     } else if (telnetVal === '1') {
         findings.push({
             id:          'syn-telnet-enabled',

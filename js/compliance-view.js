@@ -14,11 +14,11 @@
 // ── Framework display metadata ────────────────────────────────────────────────
 
 const FRAMEWORK_META = {
-    CIS:  { label: 'CIS Controls v8',  color: '#f97316' },
-    NIST: { label: 'NIST SP 800-53',   color: '#60a5fa' },
-    ISO:  { label: 'ISO 27001:2022',   color: '#a78bfa' },
-    NIS2: { label: 'NIS2 Directive',   color: '#34d399' },
-    PCI:  { label: 'PCI DSS v4',       color: '#fb923c' },
+    CIS:  { label: 'CIS Controls v8',  color: '#a3380a' },
+    NIST: { label: 'NIST SP 800-53',   color: '#1d4ed8' },
+    ISO:  { label: 'ISO 27001:2022',   color: '#6d28d9' },
+    NIS2: { label: 'NIS2 Directive',   color: '#036b4d' },
+    PCI:  { label: 'PCI DSS v4',       color: '#9a3412' },
 };
 
 const FW_REF_DESCRIPTIONS = {
@@ -87,19 +87,19 @@ const complianceState = {
 function setComplianceSeverityFilter(severity) {
     complianceState.severityFilter =
         complianceState.severityFilter === severity ? null : severity;
-    rerenderCompliance();
+    rerenderCompliance(true);
 }
 
 function setComplianceFrameworkFilter(code) {
     complianceState.frameworkFilter =
         complianceState.frameworkFilter === code ? null : code;
-    rerenderCompliance();
+    rerenderCompliance(true);
 }
 
 function clearAllComplianceFilters() {
     complianceState.severityFilter  = null;
     complianceState.frameworkFilter = null;
-    rerenderCompliance();
+    rerenderCompliance(true);
 }
 
 function toggleFindingExpanded(id) {
@@ -112,16 +112,23 @@ function toggleFindingExpanded(id) {
 }
 
 let _cachedFindings = null;
+let _complianceVisibleCount = 0;
 
-function rerenderCompliance() {
+/** @param {boolean} [announceCount]  announce the number of visible findings (filter changes) */
+function rerenderCompliance(announceCount = false) {
     if (!_cachedFindings) return;
     const el = document.getElementById('compliance-view-root');
     if (!el) return;
+    // The popover anchor is replaced by the re-render
+    closeFwRefPopover();
     const scrollArea = el.querySelector('.findings-scroll-area');
     const scrollTop  = scrollArea ? scrollArea.scrollTop : 0;
-    el.innerHTML     = renderComplianceView(_cachedFindings);
-    const newScroll  = el.querySelector('.findings-scroll-area');
-    if (newScroll) newScroll.scrollTop = scrollTop;
+    rerenderKeepingFocus(() => {
+        el.innerHTML    = renderComplianceView(_cachedFindings);
+        const newScroll = el.querySelector('.findings-scroll-area');
+        if (newScroll) newScroll.scrollTop = scrollTop;
+    });
+    if (announceCount) announce(t('announceFiltered', findingCountText(_complianceVisibleCount)));
 }
 
 // ── FW reference popover ──────────────────────────────────────────────────────
@@ -134,6 +141,8 @@ function showFwRefPopover(label, anchorEl) {
     const pop = document.createElement('div');
     pop.id = 'fw-ref-popover';
     pop.className = 'fw-ref-popover';
+    pop.setAttribute('role', 'tooltip');
+    pop.lang = 'en';
     pop.innerHTML = `
         <div class="fw-ref-popover-label">${escapeHtml(label)}</div>
         <div class="fw-ref-popover-title">${escapeHtml(info.title)}</div>
@@ -150,11 +159,29 @@ function showFwRefPopover(label, anchorEl) {
     pop.style.left = `${Math.max(12, left)}px`;
     pop.style.top  = `${Math.max(8, top)}px`;
 
+    _fwRefAnchor = anchorEl;
+    anchorEl.setAttribute('aria-describedby', pop.id);
+    anchorEl.addEventListener('blur', closeFwRefPopover, { once: true });
+    // Reference texts exist in English only
+    announce(`${label}: ${info.title}. ${info.body}`, 'en');
+
     setTimeout(() => document.addEventListener('click', closeFwRefPopover, { once: true }), 0);
+    document.addEventListener('keydown', _fwRefKeyHandler);
 }
+
+let _fwRefAnchor = null;
 
 function closeFwRefPopover() {
     document.getElementById('fw-ref-popover')?.remove();
+    _fwRefAnchor?.removeAttribute('aria-describedby');
+    _fwRefAnchor?.removeEventListener('blur', closeFwRefPopover);
+    _fwRefAnchor = null;
+    document.removeEventListener('click', closeFwRefPopover);
+    document.removeEventListener('keydown', _fwRefKeyHandler);
+}
+
+function _fwRefKeyHandler(e) {
+    if (e.key === 'Escape') closeFwRefPopover();
 }
 
 // ── Top-level renderer ────────────────────────────────────────────────────────
@@ -182,11 +209,13 @@ function renderComplianceView(findings) {
     }
     visible.sort((a, b) =>
         (SEVERITY_SORT_ORDER[a.severity] ?? 5) - (SEVERITY_SORT_ORDER[b.severity] ?? 5));
+    _complianceVisibleCount = visible.length;
 
     return `
+        <h2 class="visually-hidden" id="view-heading" tabindex="-1">${t('tabSecurity')}</h2>
         ${renderScoreHeader(findings, failFindings, score)}
         ${renderStatusBar(failFindings, visible)}
-        <div class="findings-scroll-area">
+        <div class="findings-scroll-area" tabindex="0" role="region" aria-label="${t('findingsRegionLabel')}">
             ${renderFindingsByCategory(visible, unknownFindings.length)}
             ${renderUnknownSection(unknownFindings)}
             ${renderPassedSection(passFindings)}
@@ -210,16 +239,19 @@ function renderScoreHeader(allFindings, failFindings, score) {
 
     const kpiTiles = [
         { key: 'critical', labelKey: 'severityCritical', color: '#aa0808' },
-        { key: 'high',     labelKey: 'severityHigh',     color: '#e76500' },
+        // Darker than SEVERITY_COLOR.high: the count needs 3:1 on the active tile tint
+        { key: 'high',     labelKey: 'severityHigh',     color: '#d45d00' },
         { key: 'medium',   labelKey: 'severityMedium',   color: '#b44f00' },
         { key: 'low',      labelKey: 'severityLow',      color: '#0064d9' },
     ].map(({ key, labelKey, color }) => {
         const count    = counts[key] || 0;
         const isActive = complianceState.severityFilter === key;
         return `
-            <button class="kpi-tile ${isActive ? 'kpi-tile--active' : ''} ${count === 0 ? 'kpi-tile--empty' : ''}"
-                    style="--kpi-color: ${color}"
-                    ${count > 0 ? `onclick="setComplianceSeverityFilter('${key}')"` : 'disabled'}>
+            <button type="button" class="kpi-tile ${isActive ? 'kpi-tile--active' : ''} ${count === 0 ? 'kpi-tile--empty' : ''}"
+                    style="--kpi-color: ${color}" data-focus-key="kpi-${key}"
+                    ${count > 0
+                        ? `aria-pressed="${isActive}" onclick="setComplianceSeverityFilter('${key}')"`
+                        : 'aria-disabled="true"'}>
                 <span class="kpi-number">${count}</span>
                 <span class="kpi-label">${t(labelKey)}</span>
             </button>
@@ -229,34 +261,35 @@ function renderScoreHeader(allFindings, failFindings, score) {
     const frameworkStats = {};
     for (const f of allFindings) {
         for (const fw of f.frameworks) {
-            if (!frameworkStats[fw.code]) frameworkStats[fw.code] = { fail: 0, pass: 0 };
-            if (f.status === 'fail')      frameworkStats[fw.code].fail++;
-            else if (f.status === 'pass') frameworkStats[fw.code].pass++;
+            if (!frameworkStats[fw.code]) frameworkStats[fw.code] = { fail: 0, pass: 0, unknown: 0 };
+            if (f.status === 'fail')         frameworkStats[fw.code].fail++;
+            else if (f.status === 'pass')    frameworkStats[fw.code].pass++;
+            else if (f.status === 'unknown') frameworkStats[fw.code].unknown++;
         }
     }
 
     const fwChips = Object.entries(FRAMEWORK_META).map(([code, meta]) => {
-        const stats    = frameworkStats[code] || { fail: 0, pass: 0 };
+        const stats    = frameworkStats[code] || { fail: 0, pass: 0, unknown: 0 };
         const isActive = complianceState.frameworkFilter === code;
         const hasIssues = stats.fail > 0;
-        // A framework whose checks could all not be evaluated is not "clean"
-        const evaluated = stats.fail + stats.pass > 0;
+        // A framework is only "clean" when every one of its checks was evaluated
+        const evaluated = stats.pass > 0 && stats.unknown === 0;
         return `
-            <button class="fw-chip ${isActive ? 'fw-chip--active' : ''} ${hasIssues ? 'fw-chip--issues' : evaluated ? 'fw-chip--clean' : ''}"
-                    style="--chip-color: ${meta.color}"
+            <button type="button" class="fw-chip ${isActive ? 'fw-chip--active' : ''} ${hasIssues ? 'fw-chip--issues' : evaluated ? 'fw-chip--clean' : ''}"
+                    style="--chip-color: ${meta.color}" data-focus-key="fw-${code}" aria-pressed="${isActive}"
                     onclick="setComplianceFrameworkFilter('${code}')"
                     title="${meta.label}">
                 ${code}
                 ${hasIssues
-                    ? `<span class="fw-chip-count">${stats.fail}</span>`
-                    : evaluated ? '<span class="fw-chip-clean">✓</span>' : ''}
+                    ? `<span class="fw-chip-count" aria-hidden="true">${stats.fail}</span><span class="visually-hidden">: ${findingCountText(stats.fail)}</span>`
+                    : evaluated ? `<span class="fw-chip-clean" aria-hidden="true">✓</span><span class="visually-hidden">: ${t('fwChipClean')}</span>` : ''}
             </button>
         `;
     }).join('');
 
     const hasFilter = complianceState.severityFilter || complianceState.frameworkFilter;
     const clearBtn  = hasFilter
-        ? `<button class="chip-clear-btn" onclick="clearAllComplianceFilters()">${t('clearFiltersBtn')}</button>` : '';
+        ? `<button type="button" class="chip-clear-btn" data-focus-key="clear-filters" onclick="clearAllComplianceFilters()">${t('clearFiltersBtn')}</button>` : '';
 
     return `
         <div class="compliance-header">
@@ -266,7 +299,7 @@ function renderScoreHeader(allFindings, failFindings, score) {
                         <span class="score-kpi-val">${score}</span><span class="score-kpi-denom">/100</span>
                     </div>
                     <div class="score-kpi-detail">
-                        <div class="score-progress-bar" role="progressbar"
+                        <div class="score-progress-bar" role="progressbar" aria-label="${t('scoreAriaLabel')}"
                              aria-valuenow="${score}" aria-valuemin="0" aria-valuemax="100">
                             <div class="score-progress-fill" style="width:${score}%;background:${gradeColor}"></div>
                         </div>
@@ -299,7 +332,7 @@ function renderStatusBar(allFail, visible) {
 
     const labels = [];
     if (af) labels.push(FRAMEWORK_META[af]?.label || af);
-    if (as) labels.push(as);
+    if (as) labels.push(t('severity' + as.charAt(0).toUpperCase() + as.slice(1)));
 
     return `
         <div class="compliance-status-bar">
@@ -311,7 +344,7 @@ function renderStatusBar(allFail, visible) {
                     : `<span class="status-bar-total">(${t('ofTotal')} ${allFail.length})</span>`}
             </span>
             ${hasFilter
-                ? `<button class="status-bar-clear" onclick="clearAllComplianceFilters()">${t('clearAllFiltersBtn')}</button>`
+                ? `<button type="button" class="status-bar-clear" data-focus-key="clear-filters" onclick="clearAllComplianceFilters()">${t('clearAllFiltersBtn')}</button>`
                 : ''}
         </div>
     `;
@@ -320,10 +353,18 @@ function renderStatusBar(allFail, visible) {
 // ── Findings grouped by category ──────────────────────────────────────────────
 
 function renderFindingsByCategory(findings, unknownCount = 0) {
+    if (findings.length === 0 && (complianceState.severityFilter || complianceState.frameworkFilter)) {
+        return `
+            <div class="findings-empty-state">
+                <div class="findings-empty-title">${t('noFilterMatchTitle')}</div>
+                <div class="findings-empty-sub">${t('noFilterMatchSub')}</div>
+            </div>
+        `;
+    }
     if (findings.length === 0) {
         return `
             <div class="findings-empty-state">
-                <div class="findings-empty-icon">✓</div>
+                <div class="findings-empty-icon" aria-hidden="true">✓</div>
                 <div class="findings-empty-title">${t('noFindingsTitle')}</div>
                 <div class="findings-empty-sub">${unknownCount ? t('noFindingsSubUnknown', unknownCount) : t('noFindingsSub')}</div>
             </div>
@@ -345,7 +386,7 @@ function renderFindingsByCategory(findings, unknownCount = 0) {
         return `
             <div class="category-group">
                 <div class="category-header" style="--cat-color: ${topColor}">
-                    <span class="category-header-name">${escapeHtml(cat)}</span>
+                    <h3 class="category-header-name">${escapeHtml(cat)}</h3>
                     <span class="category-header-count">${issueText}</span>
                 </div>
                 <div class="category-findings">
@@ -366,14 +407,18 @@ function renderFindingCard(f) {
     const fwTags = f.frameworks.map(fw => {
         const meta    = FRAMEWORK_META[fw.code] || { color: '#6b7d93' };
         const hasInfo = !!FW_REF_DESCRIPTIONS[fw.label];
-        return `<button class="fw-tag ${hasInfo ? 'fw-tag--clickable' : ''}"
-                        style="color:${meta.color};background:${meta.color}18;border-color:${meta.color}33"
-                        ${hasInfo ? `onclick="event.stopPropagation();showFwRefPopover('${fw.label}',this)"` : ''}
-                >${fw.label}</button>`;
+        const style   = `color:${meta.color};background:${meta.color}18;border-color:${meta.color}33`;
+        // Only tags with a reference description are interactive
+        return hasInfo
+            ? `<button type="button" class="fw-tag fw-tag--clickable" style="${style}"
+                       onclick="event.stopPropagation();showFwRefPopover('${fw.label}',this)">${fw.label}</button>`
+            : `<span class="fw-tag" style="${style}">${fw.label}</span>`;
     }).join('');
 
+    const titleId = `ftitle-${f.id}`;
+    const bodyId  = `fbody-${f.id}`;
     const body = isExpanded ? `
-        <div class="finding-body">
+        <div class="finding-body" id="${bodyId}">
             ${f.description ? `<p class="finding-description">${escapeHtml(f.description)}</p>` : ''}
             ${f.affectedItems.length > 0 ? `
                 <div class="finding-section">
@@ -400,11 +445,15 @@ function renderFindingCard(f) {
                     <div class="finding-header-main">
                         <span class="severity-pill severity-pill--${f.severity}">${sevLabel}</span>
                     </div>
-                    <div class="finding-title">${escapeHtml(f.title)}</div>
+                    <div class="finding-title" id="${titleId}">${escapeHtml(f.title)}</div>
                     <div class="finding-meta">
                         <div class="finding-fw-tags">${fwTags}</div>
                     </div>
-                    <span class="finding-toggle ${isExpanded ? 'finding-toggle--open' : ''}">▶</span>
+                    <button type="button" class="finding-toggle ${isExpanded ? 'finding-toggle--open' : ''}"
+                            aria-expanded="${isExpanded}" aria-labelledby="${titleId}"
+                            ${isExpanded ? `aria-controls="${bodyId}"` : ''} data-focus-key="toggle-${f.id}"
+                            onclick="event.stopPropagation();toggleFindingExpanded('${f.id}')"
+                    ><span class="finding-toggle-icon" aria-hidden="true">▶</span></button>
                 </div>
                 ${body}
             </div>
@@ -434,9 +483,9 @@ function renderPassedSection(passFindings) {
 
     return `
         <div class="passed-section">
-            <div class="passed-section-header">
+            <h3 class="passed-section-header">
                 ${t('passedChecks')} <span class="passed-count">${passFindings.length}</span>
-            </div>
+            </h3>
             <div class="passed-list">${cards}</div>
         </div>
     `;
@@ -470,9 +519,9 @@ function renderUnknownSection(unknownFindings) {
 
     return `
         <div class="passed-section unknown-section">
-            <div class="passed-section-header unknown-section-header">
+            <h3 class="passed-section-header unknown-section-header">
                 ${t('unknownChecks')} <span class="passed-count unknown-count">${unknownFindings.length}</span>
-            </div>
+            </h3>
             <p class="unknown-section-hint">${t('unknownDesc')}</p>
             <div class="passed-list">${cards}</div>
         </div>
@@ -490,7 +539,7 @@ function renderExcludedChecksSection() {
             <summary class="excluded-checks-summary">
                 ${filterIcon}
                 <span>${t('excludedChecksTitle')}</span>
-                <span class="excluded-checks-toggle">▶</span>
+                <span class="excluded-checks-toggle" aria-hidden="true">▶</span>
             </summary>
             <p class="excluded-checks-body">${t('excludedChecksDesc')}</p>
         </details>

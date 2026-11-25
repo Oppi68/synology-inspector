@@ -14,27 +14,35 @@ function checkNetwork(config, _tlsProfile) {
     // Each INI block contains dos_protect_enable=yes|no.
     const dosConfigRaw = config.get('DOS_config');
     const unprotectedInterfaces = [];
+    let dosUnclear = false;
     let dosConfigAvailable = false;
 
     if (dosConfigRaw) {
         try {
             const dosConfig = JSON.parse(dosConfigRaw);
             dosConfigAvailable = dosConfig !== null && typeof dosConfig === 'object'
-                && Object.keys(dosConfig).length > 0;
-            for (const [confFilePath, iniContent] of Object.entries(dosConfig)) {
+                && !Array.isArray(dosConfig) && Object.keys(dosConfig).length > 0;
+            for (const [confFilePath, iniContent] of dosConfigAvailable ? Object.entries(dosConfig) : []) {
+                // Each value is the text of one INI file
+                if (typeof iniContent !== 'string') { dosUnclear = true; continue; }
                 const interfaceName = confFilePath
                     .replace('/etc/fw_security/', '')
                     .replace('.conf', '');
-                if (!/dos_protect_enable\s*=\s*yes/i.test(iniContent)) {
-                    unprotectedInterfaces.push(interfaceName);
-                }
+                // The last active (uncommented) directive counts. Only a bare or
+                // fully quoted yes/no is understood; anything else is unclear.
+                const last = [...iniContent.matchAll(/^[ \t]*dos_protect_enable[ \t]*=(.*)$/gim)].at(-1);
+                const value = last ? last[1].trim().match(/^("?)(yes|no)\1$/i)?.[2].toLowerCase() : 'no';
+                if (value === 'no') unprotectedInterfaces.push(interfaceName);
+                else if (value !== 'yes') dosUnclear = true;
             }
-        } catch (_) {}
+        } catch (_) {
+            dosUnclear = true;
+        }
     }
 
-    if (!dosConfigAvailable) {
+    if (!dosConfigAvailable || (dosUnclear && unprotectedInterfaces.length === 0)) {
         findings.push(unknownFinding('syn-dos-unknown', t('checkNameDoS'), t('catNetwork'),
-            [fwRef('NIST', 'SC-5'), fwRef('ISO', 'A.8.20')]));
+            [fwRef('NIST', 'SC-5'), fwRef('ISO', 'A.8.20'), fwRef('NIS2', 'Art.21(e)')]));
     } else {
         if (unprotectedInterfaces.length === 0) {
             findings.push({

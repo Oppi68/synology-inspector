@@ -140,6 +140,9 @@
             checkFTPTLSPassTitle: 'FTP Is Using TLS Encryption',
             checkFTPTLSDesc:      'Plain FTP transmits credentials and file content in clear text. Anyone on the network path can intercept passwords and data. Use FTPS (FTP over TLS) or switch to SFTP (SSH File Transfer Protocol) instead.',
             checkFTPTLSRemediation: 'Enable FTPS in Control Panel › File Services › FTP › Enable FTP SSL/TLS encryption.',
+            checkFTPTLSOptionalFailTitle: 'FTP Does Not Require TLS',
+            checkFTPTLSOptionalDesc:      'FTPS is offered but not required. Clients can still connect without encryption and send credentials and file content in clear text. Accept only encrypted FTP connections or switch to SFTP (SSH File Transfer Protocol).',
+            checkFTPTLSOptionalRemediation: 'Configure the FTP service to accept only SSL/TLS connections in Control Panel › File Services › FTP, or use SFTP instead.',
             checkTLSFailTitle:      'Outdated TLS Versions Are Allowed',
             checkTLSPassTitle:      'Web Services Allow Only TLS 1.2 or Newer',
             checkTLSDesc:           'TLS 1.0 and 1.1 have been deprecated since 2021 (RFC 8996) and are not permitted by PCI DSS. Services that still accept them let clients fall back to weak cipher suites. The check covers the nginx-based services of the TLS profile (DSM, QuickConnect, reverse proxy, application portal).',
@@ -151,6 +154,10 @@
             checkAutoBlockDesc:      'Without account blocking, attackers can attempt unlimited password combinations against DSM and all enabled services. Even a modest rate of attempts can eventually succeed against weak passwords.',
             checkAutoBlockAffected:  'All DSM login services',
             checkAutoBlockRemediation: 'Enable auto block in Control Panel › Security › Account › Enable auto block. Configure a low attempt count (e.g., 5 attempts in 2 minutes).',
+            checkAccountProtectionFailTitle: 'Account Protection Is Disabled',
+            checkAccountProtectionPassTitle: 'Account Protection Is Enabled',
+            checkAccountProtectionDesc:      'Auto block counts failed logins per IP address. An attacker who spreads guesses over many addresses never reaches that limit. Account protection counts per account and locks it for untrusted clients after repeated failures.',
+            checkAccountProtectionRemediation: 'Enable account protection: Control Panel › Security › Account › Account Protection.',
 
             checkHTTPSRedirectFailTitle: 'HTTP Does Not Redirect to HTTPS',
             checkHTTPSRedirectPassTitle: 'HTTP Automatically Redirects to HTTPS',
@@ -225,6 +232,10 @@
             checkSecurityUpdatesPassTitle: 'Security Updates Are Installed Automatically',
             checkSecurityUpdatesDesc:      'DSM is set to notify only. Security fixes stay uninstalled until someone applies them manually, which leaves known vulnerabilities open in the meantime. Synology regularly patches remotely exploitable flaws in DSM.',
             checkSecurityUpdatesRemediation: 'Allow DSM to install important updates automatically: Control Panel › Update & Restore › DSM Update › Update Settings.',
+            checkNotifyFailTitle:       'No Notifications Are Enabled',
+            checkNotifyPassTitle:       'Notifications Are Enabled',
+            checkNotifyDesc:            'Email, push and SMS notifications are all off. DSM then reports blocked login attempts, failing drives or a degraded volume to nobody; problems only show up when someone logs in and looks.',
+            checkNotifyRemediation:     'Turn on email or push notifications: Control Panel › Notification › Email or Push Service.',
 
             checkSMBSigningFailTitle:   'SMB Server Signing Not Enforced',
             checkSMBSigningPassTitle:   'SMB Server Signing Enforced (Force)',
@@ -263,9 +274,6 @@
             bpCheckFastCloneRemediation:        'Enable File Fast Clone: Control Panel › File Services › Advanced › Enable file fast clone.',
 
             bpCheckUpdateNotifyPassTitle:       'DSM Feature Updates Are Not Installed Automatically',
-            bpCheckUpdateNotifyFailTitle:       'DSM Installs All Updates Automatically',
-            bpCheckUpdateNotifyDesc:            'Automatic installation of all DSM updates, including feature releases, can cause unplanned downtime and introduce incompatibilities with installed packages or running containers. Installing only important security updates automatically, or being notified, keeps feature updates under your control.',
-            bpCheckUpdateNotifyRemediation:     'Change the update setting to install only important updates automatically, or to notify only: Control Panel › Update & Restore › DSM Update › Update Settings.',
 
             bpCheckRecycleTaskPassTitle:        'Recycle Bin Cleanup Task Is Configured',
             bpCheckRecycleTaskFailTitle:        'No Recycle Bin Cleanup Task Found',
@@ -287,6 +295,8 @@
             ofTotal:                 'of',
             noFindingsTitle:         'No Issues Found',
             noFindingsSub:           'All security checks passed.',
+            noFilterMatchTitle:      'No findings match the filter',
+            noFilterMatchSub:        'Clear the filters to see all failed checks.',
             noFindingsSubUnknown:    'No failed checks, but {0} could not be evaluated (see below).',
             issueCount:              '1 issue',
             issuesCount:             '{0} issues',
@@ -323,6 +333,7 @@
             checkNameCSRF:           'CSRF protection',
             checkNameIFrame:         'iFrame embedding',
             checkNameIPCheck:        'Session IP binding',
+            checkNamePwdLength:      'Minimum password length',
             checkNameSMBMinProto:    'SMB minimum protocol',
             checkNameAdmin:          'Default admin account',
             checkNameGuest:          'Guest account',
@@ -331,11 +342,62 @@
             checkNameTLS:            'TLS versions of web services',
             checkNameConfigBackup:   'Automatic configuration backup',
             checkNameSecurityUpdates: 'Automatic security updates',
+            checkNameNotify:          'Notifications',
+            checkNameAccountProtection: 'Account protection',
+            checkNameAutoBlock:      'Auto block',
+            checkNameHTTPSRedirect:  'HTTPS redirect',
+            checkNameHSTS:           'HSTS',
+            checkNamePwdPolicy:      'Password strength rules',
+            checkNameSMBSigning:     'SMB signing',
+            checkNameFTPTLS:         'FTP encryption',
             affectedItems:           'Affected items',
             howToFix:                'How to fix',
 
             // ── About ──────────────────────────────────────────────────────────
             aboutBtn:         'About this tool',
+            aboutHeaderBtn:   'About',
+            closeLabel:       'Close',
+            langGroupLabel:   'Language',
+            scoreAriaLabel:   'Security score',
+            findingsRegionLabel: 'Findings',
+            contextBarLabel: 'Backup details',
+            fwChipClean: 'no issues',
+            announceLoaded:   'Backup analysed: {0}.',
+            announceFiltered: '{0} shown.',
+            announceCompared: 'Backups compared. Check results: {0}. Settings: {1}.',
+            compareLead:      'Two NAS or two points in time?',
+            compareBrowse:    'Compare two backups',
+            errCompareCount:  'Select exactly two .dss files to compare.',
+            compareTitle:     'Backup comparison',
+            compareBtnNew:    'Start over',
+            compareSideA:     'Backup A',
+            compareSideB:     'Backup B',
+            compareColSetting: 'Setting',
+            compareColResult: 'Result',
+            compareStatusChanged: 'Different',
+            compareStatusSame:    'Same',
+            compareStatusOnlyA:   'Only in A',
+            compareStatusOnlyB:   'Only in B',
+            compareStatusUnknown: 'Not comparable',
+            compareValueMissing:    'not present',
+            compareValueUnreadable: 'not readable',
+            compareValueHidden:     'hidden',
+            compareValueEmpty:      '(empty)',
+            compareSummary:   '{0} different, {1} only in A, {2} only in B, {3} not comparable',
+            compareScope:     'Compares the system settings such as SMB, FTP, NFS, ports and password rules. Users, shares and scheduled tasks only count through the check results.',
+            compareHiddenNote: 'Values of settings whose names point to passwords, keys, certificates or mail, and values longer than 32 characters, are compared but not shown. Shorter values such as IP addresses or host names are shown.',
+            compareShowAll:   'Show unchanged settings',
+            compareNoDifferences: 'No differences in the system settings.',
+            compareSettingsTitle: 'System settings',
+            compareFindingsTitle: 'Check results',
+            compareFindingsNote:  'Failed checks and checks that could not be evaluated, from both the security and the best practice checks. Passed checks are not listed.',
+            compareFindingsSummary: '{0} only in A, {1} only in B, {2} with different affected items',
+            compareFindingsOnlyA: 'Only in backup A',
+            compareFindingsOnlyB: 'Only in backup B',
+            compareFindingsItemsChanged: 'In both, with different affected items',
+            compareFindingsNone:  'No differences in which checks are open or in their affected items.',
+            compareItemsOnlyA:    'only in A: {0}',
+            compareItemsOnlyB:    'only in B: {0}',
             aboutMaker:       'JKLP CONSULTING · SECURITY AUDIT',
             aboutDesc:        'Synology Inspector analyses Synology DSM configuration backups (.dss) directly in your browser — no data is ever uploaded. It checks your NAS configuration against security best practices and common compliance frameworks.',
             aboutChannelName: 'JKLP Consulting',
@@ -374,6 +436,8 @@
             ofTotal:                 'von',
             noFindingsTitle:         'Keine Befunde',
             noFindingsSub:           'Alle Sicherheitsprüfungen bestanden.',
+            noFilterMatchTitle:      'Keine Befunde für diesen Filter',
+            noFilterMatchSub:        'Filter zurücksetzen, um alle fehlgeschlagenen Prüfungen zu sehen.',
             noFindingsSubUnknown:    'Keine fehlgeschlagenen Prüfungen, aber {0} nicht auswertbar (siehe unten).',
             issueCount:              '1 Befund',
             issuesCount:             '{0} Befunde',
@@ -410,6 +474,7 @@
             checkNameCSRF:           'CSRF-Schutz',
             checkNameIFrame:         'iFrame-Einbettung',
             checkNameIPCheck:        'IP-Bindung der Sitzung',
+            checkNamePwdLength:      'Mindestlänge für Passwörter',
             checkNameSMBMinProto:    'SMB-Mindestprotokoll',
             checkNameAdmin:          'Standard-Admin-Konto',
             checkNameGuest:          'Gastkonto',
@@ -418,11 +483,62 @@
             checkNameTLS:            'TLS-Versionen der Webdienste',
             checkNameConfigBackup:   'Automatische Konfigurationssicherung',
             checkNameSecurityUpdates: 'Automatische Sicherheitsupdates',
+            checkNameNotify:          'Benachrichtigungen',
+            checkNameAccountProtection: 'Kontoschutz',
+            checkNameAutoBlock:      'Automatische Kontosperrung',
+            checkNameHTTPSRedirect:  'HTTPS-Weiterleitung',
+            checkNameHSTS:           'HSTS',
+            checkNamePwdPolicy:      'Regeln für Passwortstärke',
+            checkNameSMBSigning:     'SMB-Signierung',
+            checkNameFTPTLS:         'FTP-Verschlüsselung',
             affectedItems:           'Betroffene Elemente',
             howToFix:                'So beheben',
 
             // ── About ──────────────────────────────────────────────────────────
             aboutBtn:         'Über dieses Tool',
+            aboutHeaderBtn:   'Über',
+            closeLabel:       'Schließen',
+            langGroupLabel:   'Sprache',
+            scoreAriaLabel:   'Sicherheitsbewertung',
+            findingsRegionLabel: 'Befunde',
+            contextBarLabel: 'Details der Sicherung',
+            fwChipClean: 'keine Befunde',
+            announceLoaded:   'Sicherung analysiert: {0}.',
+            announceFiltered: '{0} angezeigt.',
+            announceCompared: 'Sicherungen verglichen. Prüfergebnisse: {0}. Einstellungen: {1}.',
+            compareLead:      'Zwei NAS oder zwei Zeitpunkte?',
+            compareBrowse:    'Zwei Sicherungen vergleichen',
+            errCompareCount:  'Für den Vergleich genau zwei .dss-Dateien auswählen.',
+            compareTitle:     'Vergleich der Sicherungen',
+            compareBtnNew:    'Neu beginnen',
+            compareSideA:     'Sicherung A',
+            compareSideB:     'Sicherung B',
+            compareColSetting: 'Einstellung',
+            compareColResult: 'Ergebnis',
+            compareStatusChanged: 'Unterschiedlich',
+            compareStatusSame:    'Gleich',
+            compareStatusOnlyA:   'Nur in A',
+            compareStatusOnlyB:   'Nur in B',
+            compareStatusUnknown: 'Nicht vergleichbar',
+            compareValueMissing:    'nicht vorhanden',
+            compareValueUnreadable: 'nicht lesbar',
+            compareValueHidden:     'verborgen',
+            compareValueEmpty:      '(leer)',
+            compareSummary:   '{0} unterschiedlich, {1} nur in A, {2} nur in B, {3} nicht vergleichbar',
+            compareScope:     'Verglichen werden die Systemeinstellungen wie SMB, FTP, NFS, Ports und Passwortregeln. Benutzer, Freigaben und geplante Aufgaben fließen nur über die Prüfergebnisse ein.',
+            compareHiddenNote: 'Werte von Einstellungen, deren Namen auf Passwörter, Schlüssel, Zertifikate oder E-Mail hindeuten, und Werte über 32 Zeichen werden verglichen, aber nicht angezeigt. Kürzere Werte wie IP-Adressen oder Hostnamen sind sichtbar.',
+            compareShowAll:   'Unveränderte Einstellungen anzeigen',
+            compareNoDifferences: 'Keine Unterschiede in den Systemeinstellungen.',
+            compareSettingsTitle: 'Systemeinstellungen',
+            compareFindingsTitle: 'Prüfergebnisse',
+            compareFindingsNote:  'Fehlgeschlagene Sicherheits- und Best-Practice-Prüfungen sowie Prüfungen, die nicht ausgewertet werden konnten. Bestandene Prüfungen werden nicht aufgeführt.',
+            compareFindingsSummary: '{0} nur in A, {1} nur in B, {2} mit anderen betroffenen Einträgen',
+            compareFindingsOnlyA: 'Nur in Sicherung A',
+            compareFindingsOnlyB: 'Nur in Sicherung B',
+            compareFindingsItemsChanged: 'In beiden, mit anderen betroffenen Einträgen',
+            compareFindingsNone:  'Keine Unterschiede bei den offenen Prüfungen und ihren betroffenen Einträgen.',
+            compareItemsOnlyA:    'nur in A: {0}',
+            compareItemsOnlyB:    'nur in B: {0}',
             aboutMaker:       'JKLP CONSULTING · SICHERHEITSAUDIT',
             aboutDesc:        'Synology Inspector analysiert Synology DSM-Konfigurationssicherungen (.dss) direkt im Browser – ohne Datenübertragung. Er prüft die NAS-Konfiguration gegen Sicherheits-Best-Practices und gängige Compliance-Frameworks.',
             aboutChannelName: 'JKLP Consulting',
@@ -576,6 +692,9 @@
             checkFTPTLSPassTitle: 'FTP verwendet TLS-Verschlüsselung',
             checkFTPTLSDesc:      'FTP ohne TLS überträgt Anmeldedaten und Dateiinhalte im Klartext. Jeder auf dem Netzwerkpfad kann Passwörter und Daten mitlesen. FTPS oder SFTP sollte stattdessen verwendet werden.',
             checkFTPTLSRemediation: 'FTPS aktivieren: Systemsteuerung › Dateidienste › FTP › FTP SSL/TLS-Verschlüsselung aktivieren.',
+            checkFTPTLSOptionalFailTitle: 'FTP erzwingt kein TLS',
+            checkFTPTLSOptionalDesc:      'FTPS wird angeboten, aber nicht erzwungen. Clients können sich weiterhin unverschlüsselt verbinden und Anmeldedaten sowie Dateiinhalte im Klartext senden. Nur verschlüsselte FTP-Verbindungen zulassen oder auf SFTP (SSH File Transfer Protocol) umsteigen.',
+            checkFTPTLSOptionalRemediation: 'Den FTP-Dienst unter Systemsteuerung › Dateidienste › FTP so einstellen, dass nur SSL/TLS-Verbindungen angenommen werden, oder stattdessen SFTP nutzen.',
             checkTLSFailTitle:      'Veraltete TLS-Versionen sind erlaubt',
             checkTLSPassTitle:      'Webdienste erlauben nur TLS 1.2 oder neuer',
             checkTLSDesc:           'TLS 1.0 und 1.1 sind seit 2021 abgekündigt (RFC 8996) und unter PCI DSS nicht zulässig. Dienste, die sie noch annehmen, lassen Clients auf schwache Cipher-Suites ausweichen. Geprüft werden die nginx-basierten Dienste des TLS-Profils (DSM, QuickConnect, Reverse Proxy, Anwendungsportal).',
@@ -587,6 +706,10 @@
             checkAutoBlockDesc:      'Ohne Kontosperrung können Angreifer unbegrenzte Passwortversuche gegen DSM und alle aktivierten Dienste starten. Bereits eine moderate Versuchsrate kann bei schwachen Passwörtern erfolgreich sein.',
             checkAutoBlockAffected:  'Alle DSM-Anmeldedienste',
             checkAutoBlockRemediation: 'Automatische Sperrung aktivieren: Systemsteuerung › Sicherheit › Konto › Automatische Sperrung aktivieren. Niedrige Schwellenwerte konfigurieren (z. B. 5 Versuche in 2 Minuten).',
+            checkAccountProtectionFailTitle: 'Kontoschutz ist deaktiviert',
+            checkAccountProtectionPassTitle: 'Kontoschutz ist aktiviert',
+            checkAccountProtectionDesc:      'Die automatische Blockierung zählt Fehlversuche je IP-Adresse. Wer seine Versuche auf viele Adressen verteilt, erreicht dieses Limit nie. Der Kontoschutz zählt je Konto und sperrt es nach wiederholten Fehlversuchen für nicht vertrauenswürdige Clients.',
+            checkAccountProtectionRemediation: 'Kontoschutz aktivieren: Systemsteuerung › Sicherheit › Konto › Kontoschutz.',
 
             checkHTTPSRedirectFailTitle: 'HTTP leitet nicht auf HTTPS um',
             checkHTTPSRedirectPassTitle: 'HTTP leitet automatisch auf HTTPS um',
@@ -661,6 +784,10 @@
             checkSecurityUpdatesPassTitle: 'Sicherheitsupdates werden automatisch installiert',
             checkSecurityUpdatesDesc:      'DSM ist auf „Nur benachrichtigen“ eingestellt. Sicherheitskorrekturen bleiben uninstalliert, bis jemand sie von Hand einspielt; bekannte Schwachstellen bleiben so lange offen. Synology schließt in DSM regelmäßig Lücken, die aus der Ferne ausnutzbar sind.',
             checkSecurityUpdatesRemediation: 'DSM wichtige Updates automatisch installieren lassen: Systemsteuerung › Aktualisierung & Wiederherstellung › DSM-Aktualisierung › Update-Einstellungen.',
+            checkNotifyFailTitle:       'Keine Benachrichtigungen aktiviert',
+            checkNotifyPassTitle:       'Benachrichtigungen sind aktiviert',
+            checkNotifyDesc:            'E-Mail-, Push- und SMS-Benachrichtigungen sind alle aus. DSM meldet dann niemandem blockierte Anmeldeversuche, ausfallende Laufwerke oder ein beeinträchtigtes Volume; Probleme fallen erst auf, wenn sich jemand anmeldet und nachsieht.',
+            checkNotifyRemediation:     'E-Mail- oder Push-Benachrichtigungen einschalten: Systemsteuerung › Benachrichtigung › E-Mail bzw. Push-Dienst.',
 
             checkSMBSigningFailTitle:   'SMB-Serversignatur nicht erzwungen',
             checkSMBSigningPassTitle:   'SMB-Serversignatur erzwungen (Force)',
@@ -699,9 +826,6 @@
             bpCheckFastCloneRemediation:        'File Fast Clone aktivieren: Systemsteuerung › Dateidienste › Erweitert › Datei-Fast-Clone aktivieren.',
 
             bpCheckUpdateNotifyPassTitle:       'DSM-Funktionsupdates werden nicht automatisch installiert',
-            bpCheckUpdateNotifyFailTitle:       'DSM installiert alle Updates automatisch',
-            bpCheckUpdateNotifyDesc:            'Werden alle DSM-Updates einschließlich neuer Funktionsversionen automatisch installiert, kann das ungeplante Ausfallzeiten und Inkompatibilitäten mit installierten Paketen oder laufenden Containern verursachen. Wer nur wichtige Sicherheitsupdates automatisch installieren oder sich benachrichtigen lässt, behält Funktionsupdates unter Kontrolle.',
-            bpCheckUpdateNotifyRemediation:     'Update-Einstellung ändern, sodass nur wichtige Updates automatisch installiert werden oder nur benachrichtigt wird: Systemsteuerung › Aktualisierung & Wiederherstellung › DSM-Aktualisierung › Update-Einstellungen.',
 
             bpCheckRecycleTaskPassTitle:        'Papierkorb-Bereinigungsaufgabe ist konfiguriert',
             bpCheckRecycleTaskFailTitle:        'Keine Papierkorb-Bereinigungsaufgabe gefunden',
@@ -718,20 +842,27 @@
 
     // ── Runtime ────────────────────────────────────────────────────────────────
 
-    let _lang = localStorage.getItem('syno-inspector-lang') || 'en';
+    // Storage access throws when the browser blocks site data (e.g. file:// in
+    // some privacy modes); the app must still work without a stored language.
+    let _lang = 'en';
+    try { _lang = localStorage.getItem('syno-inspector-lang') || 'en'; } catch (_) {}
+    if (!STRINGS[_lang]) _lang = 'en';
+    document.documentElement.lang = _lang;
 
     window.t = function (key, ...args) {
         let str = (STRINGS[_lang] && STRINGS[_lang][key]) ||
                   (STRINGS['en']  && STRINGS['en'][key])  ||
                   key;
-        args.forEach((arg, i) => { str = str.replace(`{${i}}`, arg); });
+        // One pass with a replacer function: a value that contains "$&" or
+        // "{1}" is inserted literally instead of being expanded again
+        str = str.replace(/\{(\d+)\}/g, (match, i) => (i < args.length ? String(args[i]) : match));
         return str;
     };
 
     window.setLanguage = function (lang) {
         if (!STRINGS[lang]) return;
         _lang = lang;
-        localStorage.setItem('syno-inspector-lang', lang);
+        try { localStorage.setItem('syno-inspector-lang', lang); } catch (_) {}
         document.documentElement.lang = lang;
         // Update active button state
         document.querySelectorAll('.lang-btn').forEach(btn => {

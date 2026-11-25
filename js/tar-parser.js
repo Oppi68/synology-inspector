@@ -8,6 +8,7 @@
  *   Offset  Size  Field
  *     0     100   Filename (null-terminated UTF-8)
  *   124      12   File size in octal ASCII (null/space terminated)
+ *   148       8   Header checksum in octal ASCII
  *   156       1   Type flag: '0'/NUL = regular file, '5' = directory, 'L' = long name
  *   257       6   UStar magic: "ustar\0" or "ustar "
  *   345     155   Filename prefix for paths > 100 bytes (UStar only)
@@ -17,10 +18,30 @@
  */
 
 /**
+ * Read a NUL/space terminated octal field; returns null if it is not plain octal.
+ */
+function tarReadOctal(bytes, offset, length) {
+    let text = '';
+    for (let i = offset; i < offset + length && bytes[i] !== 0; i++) text += String.fromCharCode(bytes[i]);
+    text = text.trim();
+    return /^[0-7]+$/.test(text) ? parseInt(text, 8) : null;
+}
+
+/**
+ * Header checksum: sum of all 512 header bytes, the checksum field counted as spaces.
+ */
+function tarHeaderChecksum(bytes, offset) {
+    let sum = 0;
+    for (let i = 0; i < 512; i++) sum += (i >= 148 && i < 156) ? 0x20 : bytes[offset + i];
+    return sum;
+}
+
+/**
  * Parse a TAR archive and return all regular file entries.
  *
  * @param {Uint8Array|ArrayBuffer} buffer  Raw TAR bytes (uncompressed)
  * @returns {Array<{name: string, data: Uint8Array}>}
+ * @throws  {Error} On a damaged header or a member cut off by the end of the archive
  */
 function parseTar(buffer) {
     const bytes  = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
@@ -52,17 +73,22 @@ function parseTar(buffer) {
             if (prefix.length > 0) fullName = `${prefix}/${name}`;
         }
 
-        // ── File size (offset 124, 12 bytes — octal ASCII) ───────────────────
-        const sizeSlice = bytes.subarray(offset + 124, offset + 136);
-        const sizeNull  = sizeSlice.indexOf(0);
-        const sizeStr   = decoder.decode(sizeSlice.subarray(0, sizeNull === -1 ? 12 : sizeNull)).trim();
-        const fileSize  = sizeStr ? parseInt(sizeStr, 8) : 0;
+        // ── Checksum (offset 148) and file size (offset 124, 12 bytes) ───────
+        // A damaged header would misplace every following member
+        if (tarReadOctal(bytes, offset + 148, 8) !== tarHeaderChecksum(bytes, offset)) {
+            throw new Error(`Damaged archive header at offset ${offset}`);
+        }
+        const fileSize = tarReadOctal(bytes, offset + 124, 12);
+        if (fileSize === null) throw new Error(`Invalid member size at offset ${offset}`);
 
         // ── Type flag (offset 156) ────────────────────────────────────────────
         const typeFlag      = bytes[offset + 156];
         const isRegularFile = (typeFlag === 0x30 || typeFlag === 0x00); // '0' or NUL
 
         offset += BLOCK; // advance past the header
+
+        // A member whose data runs past the end means the archive was cut off
+        if (offset + fileSize > bytes.length) throw new Error('Archive is truncated');
 
         if (isRegularFile && fileSize > 0 && fullName.length > 0) {
             // slice() creates an independent copy — safe to hold after parsing
@@ -77,4 +103,16 @@ function parseTar(buffer) {
     }
 
     return entries;
+}
+
+/**
+ * Find the archive member at `path`, allowing any leading directories
+ * (e.g. "ConfigBkp/" or "./ConfigBkp/") but no partial file names.
+ *
+ * @param {Array<{name: string}>} entries
+ * @param {string}                path  e.g. "config_info" or "tls_profile/datastore.json"
+ * @returns {{name: string, data: Uint8Array}|undefined}
+ */
+function findTarEntry(entries, path) {
+    return entries.find(e => e.name === path || e.name.endsWith('/' + path));
 }

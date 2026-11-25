@@ -15,6 +15,7 @@ const SCRIPTS = [
     'js/i18n.js',
     'js/sqlite-reader.js',
     'js/compliance-engine.js',
+    'js/compare.js',
     'js/checks/check-remote-access.js',
     'js/checks/check-network.js',
     'js/checks/check-protocols.js',
@@ -71,4 +72,26 @@ function runChecks(app, configObj, extras = {}) {
     return app.runAllChecks(config, parseResult.tlsProfile, parseResult);
 }
 
-module.exports = { loadApp, runChecks, ROOT };
+const VIEW_SCRIPTS = [
+    'js/compliance-view.js',
+    'js/bestpractices-view.js',
+    'js/compare-view.js',
+    'js/app.js',
+];
+
+/**
+ * Additionally load the view renderers (and app.js for escapeHtml) into an
+ * app context. Render functions return HTML strings, so no DOM is needed.
+ *
+ * @param {Object} app  context from loadApp()
+ * @returns {Object} the same context
+ */
+function loadViews(app) {
+    app.document.addEventListener = () => {};
+    for (const file of VIEW_SCRIPTS) {
+        vm.runInContext(fs.readFileSync(path.join(ROOT, file), 'utf8'), app, { filename: file });
+    }
+    return app;
+}
+
+module.exports = { loadApp, loadViews, runChecks, ROOT };
