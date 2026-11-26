@@ -217,11 +217,12 @@ test('every i18n key exists in English and German', () => {
     assert.deepEqual([...de].filter(k => !en.has(k)), []);
 });
 
-test('every translation key used by the checks is defined', () => {
+test('every translation key used by the checks and views is defined', () => {
     const app = loadApp('de');
     const dir = path.join(ROOT, 'js/checks');
     const files = [...fs.readdirSync(dir).map(f => path.join(dir, f)),
-        path.join(ROOT, 'js/compliance-engine.js'), path.join(ROOT, 'js/compliance-view.js')];
+        ...['compliance-engine.js', 'compliance-view.js', 'bestpractices-view.js', 'app.js']
+            .map(f => path.join(ROOT, 'js', f))];
     const used = new Set();
     for (const file of files) {
         const src = fs.readFileSync(file, 'utf8');

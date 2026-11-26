@@ -267,7 +267,7 @@
     transition: background .12s, box-shadow .12s, border-color .12s;
 }
 
-.kpi-tile:hover:not(:disabled) {
+.kpi-tile:hover:not(.kpi-tile--empty) {
     background: color-mix(in srgb, var(--kpi-color) 14%, white);
     border-color: var(--kpi-color);
     box-shadow: var(--shadow-level1);
@@ -279,8 +279,9 @@
     box-shadow: 0 0 0 2px var(--kpi-color);
 }
 
+/* No opacity: dimmed text would fall below 4.5:1 contrast */
 .kpi-tile--empty {
-    opacity: .4;
+    filter: grayscale(1);
     cursor: default;
 }
 
@@ -299,6 +300,10 @@
     letter-spacing: .5px;
     color: var(--color-text-3);
 }
+
+/* --color-text-3 drops below 4.5:1 on the stronger tint */
+.kpi-tile--active .kpi-label,
+.kpi-tile:hover:not(.kpi-tile--empty) .kpi-label { color: var(--color-text-1); }
 
 /* ── Framework filter chips ──────────────────────────────────────────────────── */
 .fw-filter-row {
@@ -337,7 +342,7 @@
 
 .fw-chip:hover              { color: var(--chip-color); border-color: var(--chip-color); background: var(--color-bg-panel); }
 .fw-chip--active            { color: var(--chip-color); background: color-mix(in srgb, var(--chip-color) 8%, white); border-color: var(--chip-color); box-shadow: 0 0 0 1px var(--chip-color); }
-.fw-chip--issues .fw-chip-count { font-size: 9px; color: var(--chip-color); opacity: .9; }
+.fw-chip--issues .fw-chip-count { font-size: 9px; color: var(--chip-color); }
 .fw-chip--clean .fw-chip-clean  { font-size: 10px; color: var(--color-success); }
 
 .chip-clear-btn {
@@ -528,13 +533,17 @@
 .finding-toggle {
     grid-column: 2; grid-row: 1 / 4;
     align-self: center;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px;
+    background: none; border: none; border-radius: var(--r-sm);
     color: var(--color-text-3);
     font-size: 11px;
-    transition: transform .15s;
+    cursor: pointer;
     flex-shrink: 0;
 }
 
-.finding-toggle--open { transform: rotate(90deg); }
+.finding-toggle-icon { display: inline-block; transition: transform .15s; }
+.finding-toggle--open .finding-toggle-icon { transform: rotate(90deg); }
 
 /* ── Severity pill — SAP Fiori Object Status ─────────────────────────────────── */
 /*
@@ -553,12 +562,12 @@
 }
 
 .severity-pill--critical { background: var(--sapErrorBackground,   #ffeaf4); color: var(--sapNegativeColor,  #aa0808); }
-.severity-pill--high     { background: var(--sapWarningBackground, #fff8d6); color: var(--sapCriticalColor,  #e76500); }
+.severity-pill--high     { background: var(--sapWarningBackground, #fff8d6); color: #b83d00; } /* #e76500 is 3.1:1 on this background */
 .severity-pill--medium   { background: var(--sapWarningBackground, #fff8d6); color: var(--sapCriticalTextColor, #b44f00); }
 .severity-pill--low      { background: var(--sapInformationBackground, #e1f4ff); color: var(--sapHighlightColor, #0064d9); }
 .severity-pill--info     { background: var(--color-bg-strip);               color: var(--color-text-3); }
 .severity-pill--pass     { background: var(--sapSuccessBackground, #f5fae5); color: var(--sapPositiveColor,  #256f3a); }
-.severity-pill--unknown  { background: var(--sapNeutralBackground, #f5f6f7); color: var(--sapNeutralColor, #556b82); }
+.severity-pill--unknown  { background: var(--sapNeutralBackground, #f5f6f7); color: var(--color-text-3); } /* --sapNeutralColor is 2.9:1 here */
 
 .finding-category {
     font-size: 10px;
@@ -573,7 +582,7 @@
     color: var(--color-text-3);
 }
 
-.finding-fw-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.finding-fw-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 
 .fw-tag {
     font-family: var(--font-mono);
@@ -587,10 +596,13 @@
     line-height: inherit;
 }
 .fw-tag--clickable {
+    display: inline-flex; align-items: center;
+    min-height: 24px;
     cursor: pointer;
-    transition: filter .1s;
+    transition: border-color .1s;
 }
-.fw-tag--clickable:hover { filter: brightness(.88); }
+/* Border instead of a brightness filter: darkening would lower the text contrast */
+.fw-tag--clickable:hover { border-color: currentColor; }
 
 /* ── Framework reference popover ─────────────────────────────────────────────── */
 .fw-ref-popover {
@@ -608,7 +620,7 @@
     font-family: var(--font-mono);
     font-size: 10px;
     font-weight: 700;
-    color: var(--sapContent_NonInteractiveIconColor, #758ca4);
+    color: var(--color-text-3);
     text-transform: uppercase;
     letter-spacing: .06em;
     margin-bottom: 5px;
@@ -856,12 +868,12 @@
     background: var(--sapNeutralBackground, #f5f6f7);
     border-color: color-mix(in srgb, var(--sapNeutralColor, #556b82) 25%, transparent);
     border-left-color: var(--sapNeutralColor, #556b82);
-    color: var(--sapNeutralColor, #556b82);
+    color: var(--color-text-3); /* --sapNeutralColor is 2.9:1 on this background */
 }
 
 .unknown-count {
     background: color-mix(in srgb, var(--sapNeutralColor, #556b82) 12%, transparent);
-    color: var(--sapNeutralColor, #556b82);
+    color: var(--color-text-3);
 }
 
 .unknown-section-hint {
@@ -884,4 +896,20 @@
 
 .unknown-detail ul {
     padding-left: 18px;
+}
+
+/* ── Small viewports / high zoom (WCAG 1.4.10 Reflow) ────────────────────────── */
+@media (max-width: 720px), (max-height: 560px) {
+    .results-shell,
+    .compliance-view,
+    .bestpractices-view { height: auto; overflow: visible; }
+    .findings-scroll-area { overflow: visible; padding: 12px; }
+    .tab-bar { padding: 0 8px; flex-wrap: wrap; }
+    .tab-btn { padding: 10px 12px; white-space: normal; }
+    .compliance-score-area { padding: 16px; flex-shrink: 1; min-width: 0; }
+    .score-kpi-block { flex-wrap: wrap; }
+    .compliance-separator { display: none; }
+    .compliance-metrics-area { padding: 12px 16px; }
+    .score-kpi-detail { min-width: 0; }
+    .compliance-status-bar { flex-wrap: wrap; padding: 7px 12px; }
 }

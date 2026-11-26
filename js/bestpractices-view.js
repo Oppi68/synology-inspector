@@ -31,9 +31,11 @@ function rerenderBestPractices() {
     if (!el) return;
     const scrollArea = el.querySelector('.findings-scroll-area');
     const scrollTop  = scrollArea ? scrollArea.scrollTop : 0;
-    el.innerHTML     = renderBestPracticesView(_cachedBPFindings);
-    const newScroll  = el.querySelector('.findings-scroll-area');
-    if (newScroll) newScroll.scrollTop = scrollTop;
+    rerenderKeepingFocus(() => {
+        el.innerHTML    = renderBestPracticesView(_cachedBPFindings);
+        const newScroll = el.querySelector('.findings-scroll-area');
+        if (newScroll) newScroll.scrollTop = scrollTop;
+    });
 }
 
 // ── Top-level renderer ────────────────────────────────────────────────────────
@@ -55,14 +57,14 @@ function renderBestPracticesView(findings) {
     return `
         <div class="bp-header">
             <div class="bp-header-left">
-                <div class="bp-title">${t('bpViewTitle')}</div>
+                <h2 class="bp-title" id="view-heading" tabindex="-1">${t('bpViewTitle')}</h2>
                 <div class="bp-subtitle">
                     <span class="bp-issue-count" style="color:${headerColor}">${issueCount}</span>
                     <span class="bp-issue-label">${issueCount === 1 ? t('findingSingular') : t('findingPlural')}</span>
                 </div>
             </div>
         </div>
-        <div class="findings-scroll-area">
+        <div class="findings-scroll-area" tabindex="0" role="region" aria-label="${t('findingsRegionLabel')}">
             ${_renderBPFindingsByCategory(failFindings)}
             ${_renderBPPassedSection(passFindings)}
             ${renderDisclaimer()}
@@ -77,8 +79,10 @@ function _renderBPFindingCard(f) {
     const stripeColor = SEVERITY_COLOR[f.severity] || '#64748b';
     const sevLabel    = t('severity' + f.severity.charAt(0).toUpperCase() + f.severity.slice(1));
 
+    const titleId = `bptitle-${f.id}`;
+    const bodyId  = `bpbody-${f.id}`;
     const body = isExpanded ? `
-        <div class="finding-body">
+        <div class="finding-body" id="${bodyId}">
             ${f.description ? `<p class="finding-description">${escapeHtml(f.description)}</p>` : ''}
             ${f.affectedItems && f.affectedItems.length > 0 ? `
                 <div class="finding-section">
@@ -105,9 +109,13 @@ function _renderBPFindingCard(f) {
                     <div class="finding-header-main">
                         <span class="severity-pill severity-pill--${f.severity}">${sevLabel}</span>
                     </div>
-                    <div class="finding-title">${escapeHtml(f.title)}</div>
+                    <div class="finding-title" id="${titleId}">${escapeHtml(f.title)}</div>
                     <div class="finding-meta"></div>
-                    <span class="finding-toggle ${isExpanded ? 'finding-toggle--open' : ''}">▶</span>
+                    <button type="button" class="finding-toggle ${isExpanded ? 'finding-toggle--open' : ''}"
+                            aria-expanded="${isExpanded}" aria-labelledby="${titleId}"
+                            ${isExpanded ? `aria-controls="${bodyId}"` : ''} data-focus-key="bp-toggle-${f.id}"
+                            onclick="event.stopPropagation();toggleBPExpanded('${f.id}')"
+                    ><span class="finding-toggle-icon" aria-hidden="true">▶</span></button>
                 </div>
                 ${body}
             </div>
@@ -121,7 +129,7 @@ function _renderBPFindingsByCategory(findings) {
     if (findings.length === 0) {
         return `
             <div class="findings-empty-state">
-                <div class="findings-empty-icon">✓</div>
+                <div class="findings-empty-icon" aria-hidden="true">✓</div>
                 <div class="findings-empty-title">${t('bpNoIssuesTitle')}</div>
                 <div class="findings-empty-sub">${t('bpNoIssuesSub')}</div>
             </div>
@@ -143,7 +151,7 @@ function _renderBPFindingsByCategory(findings) {
         return `
             <div class="category-group">
                 <div class="category-header" style="--cat-color: ${topColor}">
-                    <span class="category-header-name">${escapeHtml(cat)}</span>
+                    <h3 class="category-header-name">${escapeHtml(cat)}</h3>
                     <span class="category-header-count">${issueText}</span>
                 </div>
                 <div class="category-findings">
@@ -176,9 +184,9 @@ function _renderBPPassedSection(passFindings) {
 
     return `
         <div class="passed-section">
-            <div class="passed-section-header">
+            <h3 class="passed-section-header">
                 ${t('passedChecks')} <span class="passed-count">${passFindings.length}</span>
-            </div>
+            </h3>
             <div class="passed-list">${cards}</div>
         </div>
     `;

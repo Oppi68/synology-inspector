@@ -67,9 +67,11 @@ function renderApp() {
         root.innerHTML = `
             <div class="results-shell">
                 <div class="tab-bar">
-                    <button class="tab-btn ${isSecTab ? 'tab-btn--active' : ''}"
+                    <button type="button" class="tab-btn ${isSecTab ? 'tab-btn--active' : ''}"
+                            data-focus-key="tab-security" ${isSecTab ? 'aria-current="true"' : ''}
                             onclick="switchTab('security')">${t('tabSecurity')}</button>
-                    <button class="tab-btn ${!isSecTab ? 'tab-btn--active' : ''}"
+                    <button type="button" class="tab-btn ${!isSecTab ? 'tab-btn--active' : ''}"
+                            data-focus-key="tab-bestpractices" ${!isSecTab ? 'aria-current="true"' : ''}
                             onclick="switchTab('bestpractices')">${t('tabBestPractices')}</button>
                 </div>
                 ${isSecTab
@@ -101,6 +103,7 @@ function updateContextBar() {
         try { hostname = JSON.parse(config?.get('NETWORK_GENERAL_config') || '{}')?.config?.server_name || '—'; } catch (_) {}
 
         bar.className = 'context-bar';
+        bar.setAttribute('aria-label', t('contextBarLabel'));
         bar.innerHTML = `
             <div class="context-item">
                 <span class="context-label">${t('labelFileName')}</span>
@@ -124,14 +127,14 @@ function updateContextBar() {
             </div>
             <div class="context-actions">
                 ${window.JKLP_PDF_EXPORT ? `
-                <button class="fd-button fd-button--ghost pdf-export-btn"
+                <button type="button" class="fd-button fd-button--ghost pdf-export-btn"
                         onclick="${_activeTab === 'bestpractices' ? 'exportBPToPDF()' : 'exportToPDF()'}">
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                         <path d="M3 12h10M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                     ${t('btnExportPDF')}
                 </button>` : ''}
-                <button class="fd-button fd-button--ghost" onclick="resetApp()">
+                <button type="button" class="fd-button fd-button--ghost" onclick="resetApp()">
                     ${t('btnNewFile')}
                 </button>
             </div>
@@ -150,21 +153,24 @@ function renderDropZone() {
              ondragover="onDragOver(event)"
              ondragleave="onDragLeave(event)"
              ondrop="onDrop(event)">
-            <div class="drop-zone" id="drop-zone"
-                 onclick="document.getElementById('file-input').click()">
+            <div class="drop-zone" id="drop-zone" onclick="openFilePicker()">
                 <div class="drop-zone-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" aria-hidden="true"
                          fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                         <polyline points="17 8 12 3 7 8"/>
                         <line x1="12" y1="3" x2="12" y2="15"/>
                     </svg>
                 </div>
-                <div class="drop-zone-title">${t('dropTitle')}</div>
-                <div class="drop-zone-or">${t('dropOr')} <span class="drop-zone-browse">${t('dropBrowse')}</span></div>
-                <div class="drop-zone-formats">${t('dropFormats')}</div>
+                <h2 class="drop-zone-title">${t('dropTitle')}</h2>
+                <div class="drop-zone-or">${t('dropOr')}
+                    <button type="button" class="drop-zone-browse" id="drop-zone-btn"
+                            aria-describedby="drop-zone-formats"
+                            onclick="event.stopPropagation();openFilePicker()">${t('dropBrowse')}</button>
+                </div>
+                <div class="drop-zone-formats" id="drop-zone-formats">${t('dropFormats')}</div>
                 <div class="drop-zone-privacy">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"
                          fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
@@ -173,7 +179,7 @@ function renderDropZone() {
                 </div>
             </div>
             ${renderDisclaimer('drop-zone-disclaimer')}
-            <button class="about-inline-btn" onclick="showAbout()">
+            <button type="button" class="about-inline-btn" onclick="showAbout()">
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                     <circle cx="8" cy="8" r="7.25" stroke="currentColor" stroke-width="1.5"/>
                     <rect x="7.25" y="6.5" width="1.5" height="5" rx=".75" fill="currentColor"/>
@@ -192,7 +198,7 @@ function renderDropZone() {
 function renderLoadingView() {
     return `
         <div class="loading-view">
-            <div class="loading-spinner"></div>
+            <div class="loading-spinner" aria-hidden="true"></div>
             <div class="loading-title">${t('loading')}</div>
             <div class="loading-hint">${t('loadingHint')}</div>
         </div>
@@ -204,8 +210,8 @@ function renderLoadingView() {
 function renderErrorView(message) {
     return `
         <div class="error-view">
-            <div class="error-icon">⚠</div>
-            <div class="error-title">${t('errUnknown')}</div>
+            <div class="error-icon" aria-hidden="true">⚠</div>
+            <h2 class="error-title" tabindex="-1">${t('errUnknown')}</h2>
             <div class="error-message">${escapeHtml(message)}</div>
             <button class="fd-button fd-button--emphasized" onclick="resetApp()">
                 ${t('btnNewFile')}
@@ -221,17 +227,23 @@ function processFile(file) {
 
     _appPhase = 'loading';
     renderApp();
+    announce(t('loading'));
 
     parseDSSFile(file)
         .then(result => {
             _parseResult = result;
             _appPhase    = 'results';
             renderApp();
+            document.getElementById('view-heading')?.focus();
+            announce(t('announceLoaded', findingCountText(_complianceVisibleCount)));
         })
         .catch(err => {
             _errorMessage = err.message || String(err);
             _appPhase     = 'error';
             renderApp();
+            document.querySelector('.error-title')?.focus();
+            // The focused heading already reads the error title
+            announce(_errorMessage);
         });
 }
 
@@ -241,11 +253,58 @@ function resetApp() {
     _errorMessage = '';
     _activeTab    = 'security';
     renderApp();
+    announce('');
+    document.getElementById('drop-zone-btn')?.focus();
 }
 
 function switchTab(tab) {
     _activeTab = tab;
-    renderApp();
+    rerenderKeepingFocus(renderApp);
+}
+
+function openFilePicker() {
+    document.getElementById('file-input')?.click();
+}
+
+// ── Accessibility helpers ──────────────────────────────────────────────────────
+
+let _announceTimer = null;
+
+/**
+ * Announce a message through the persistent live region in index.html.
+ * An empty message clears the region. lang marks text in another language.
+ */
+function announce(message, lang) {
+    const region = document.getElementById('app-status');
+    if (!region) return;
+    clearTimeout(_announceTimer);
+    region.textContent = '';
+    region.removeAttribute('lang');
+    if (!message) return;
+    // A short delay makes screen readers announce identical consecutive messages
+    _announceTimer = setTimeout(() => {
+        if (lang) region.lang = lang;
+        region.textContent = message;
+    }, 50);
+}
+
+/** "1 issue" / "3 issues" in the current language. */
+function findingCountText(count) {
+    return `${count} ${count === 1 ? t('findingSingular') : t('findingPlural')}`;
+}
+
+/**
+ * Run a render function that replaces innerHTML and move focus back to the
+ * element with the same data-focus-key. If that element is gone (e.g. the
+ * "clear filters" button), focus the findings area instead of losing focus.
+ */
+function rerenderKeepingFocus(render) {
+    const key = document.activeElement?.dataset?.focusKey;
+    render();
+    if (!key) return;
+    const target = document.querySelector(`[data-focus-key="${CSS.escape(key)}"]`)
+        || document.querySelector('.findings-scroll-area');
+    target?.focus();
 }
 
 // ── Drag & drop event handlers ─────────────────────────────────────────────────
@@ -293,10 +352,10 @@ function _renderAboutContent() {
         <div class="about-header">
             <img class="about-logo" src="img/logo-jklp.png" alt="JKLP Consulting">
             <div>
-                <div class="about-tool-name">
+                <h2 class="about-tool-name" id="about-title">
                     Synology Inspector
                     <span class="about-tool-version">v1.1</span>
-                </div>
+                </h2>
                 <div class="about-maker">${t('aboutMaker')}</div>
             </div>
         </div>
@@ -329,23 +388,25 @@ function _renderAboutContent() {
     `;
 }
 
+let _aboutReturnFocus = null;
+
+// Native <dialog>: showModal() traps focus and closes on Escape.
 function showAbout() {
     const modal = document.getElementById('about-modal');
     const content = document.getElementById('about-modal-content');
-    if (!modal || !content) return;
+    if (!modal || !content || modal.open) return;
     content.innerHTML = _renderAboutContent();
-    modal.classList.remove('about-modal-overlay--hidden');
-    document.addEventListener('keydown', _aboutKeyHandler);
+    _aboutReturnFocus = document.activeElement;
+    modal.showModal();
 }
 
 function closeAbout() {
-    const modal = document.getElementById('about-modal');
-    if (modal) modal.classList.add('about-modal-overlay--hidden');
-    document.removeEventListener('keydown', _aboutKeyHandler);
+    document.getElementById('about-modal')?.close();
 }
 
-function _aboutKeyHandler(e) {
-    if (e.key === 'Escape') closeAbout();
+function _onAboutClosed() {
+    _aboutReturnFocus?.focus?.();
+    _aboutReturnFocus = null;
 }
 
 // ── Language button state ──────────────────────────────────────────────────────
@@ -353,12 +414,22 @@ function _aboutKeyHandler(e) {
 function updateLangButtons() {
     const lang = getCurrentLanguage();
     document.querySelectorAll('.lang-btn').forEach(btn => {
-        btn.classList.toggle('lang-btn--active', btn.dataset.lang === lang);
+        const active = btn.dataset.lang === lang;
+        btn.classList.toggle('lang-btn--active', active);
+        btn.setAttribute('aria-pressed', String(active));
     });
+    // Static header/dialog labels live in index.html and are translated here
+    const aboutLabel = document.getElementById('about-btn-label');
+    if (aboutLabel) aboutLabel.textContent = t('aboutHeaderBtn');
+    document.querySelector('.lang-toggle')?.setAttribute('aria-label', t('langGroupLabel'));
+    document.querySelector('.about-modal-close')?.setAttribute('aria-label', t('closeLabel'));
+    const subtitle = document.querySelector('.header-subtitle');
+    if (subtitle) subtitle.textContent = t('appSubtitle');
 }
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('about-modal')?.addEventListener('close', _onAboutClosed);
     renderApp();
 });
